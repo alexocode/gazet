@@ -1,6 +1,6 @@
-defmodule Gazette do
+defmodule Gazet do
   @moduledoc """
-  Documentation for `Gazette`.
+  Documentation for `Gazet`.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule Gazette do
 
   ## Examples
 
-      iex> Gazette.hello()
+      iex> Gazet.hello()
       :world
 
   """

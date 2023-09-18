@@ -1,8 +1,8 @@
-defmodule GazetteTest do
+defmodule GazetTest do
   use ExUnit.Case
-  doctest Gazette
+  doctest Gazet
 
   test "greets the world" do
-    assert Gazette.hello() == :world
+    assert Gazet.hello() == :world
   end
 end
