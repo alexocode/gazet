@@ -16,7 +16,7 @@ defmodule Gazet.Adapter do
   # @callback subscribe(config, topic_id, subscription_id, handler) ::
   #             :ok | {:error, :already_exists} | {:error, term}
 
-  @callback publish(config, message :: Gazet.Message.t()) :: :ok | {:error, reason :: any}
+  @callback publish(message :: Gazet.Message.t(), config) :: :ok | {:error, reason :: any}
 
   @optional_callbacks child_spec: 1
 
