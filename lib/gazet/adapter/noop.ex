@@ -2,5 +2,5 @@ defmodule Gazet.Adapter.Noop do
   @behaviour Gazet.Adapter
 
   @impl true
-  def publish(_config, _message), do: :ok
+  def publish(_message, _config), do: :ok
 end
