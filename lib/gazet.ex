@@ -19,7 +19,7 @@ defmodule Gazet do
   def publish(%__MODULE__{} = gazet, message, metadata) do
     gazet
     |> adapter()
-    |> Adapter.publish(%Message{topic: gazet.topic, data: message, metadata: metadata})
+    |> Adapter.publish(%Message{data: message, metadata: metadata})
   end
 
   @spec adapter(t) :: Adapter.spec()
