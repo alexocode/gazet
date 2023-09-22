@@ -59,6 +59,9 @@ defmodule Gazet.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      # Optional
+      {:nimble_options, "~> 1.0", optional: true},
+
       # No Runtime
       {:credo, ">= 1.0.0", only: :dev, runtime: false},
       {:dialyxir, ">= 1.0.0", only: :dev, runtime: false},
