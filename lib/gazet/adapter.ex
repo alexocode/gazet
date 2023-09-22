@@ -3,8 +3,9 @@ defmodule Gazet.Adapter do
   @type t :: module
   @type spec :: {t, config}
 
-  @typedoc "Whichever configuration is expected by the adapter."
-  @type config :: any
+  @typedoc "A keyword list of configuration values, some shared, some specific for each adapter."
+  @type config :: [shared_config | {atom, term}]
+  @type shared_config :: {:name, Gazet.name()}
 
   # @type handler :: (message, metadata -> :ok | :skip | {:ok, term} | {:error, term})
 
@@ -22,7 +23,7 @@ defmodule Gazet.Adapter do
 
   @optional_callbacks child_spec: 1
 
-  @spec child_spec(t | spec) :: Supervisor.child_spec() | nil
+  @spec child_spec(spec) :: Supervisor.child_spec() | nil
   def child_spec({adapter, config}) when is_atom(adapter) do
     if function_exported?(adapter, :child_spec, 1) do
       adapter.child_spec(config)
@@ -32,7 +33,7 @@ defmodule Gazet.Adapter do
   end
 
   @spec publish(
-          t | spec,
+          spec,
           topic :: Gazet.topic(),
           message :: Gazet.message(),
           metadata :: Gazet.metadata()
@@ -41,7 +42,12 @@ defmodule Gazet.Adapter do
     adapter.publish(config, topic, message, metadata)
   end
 
-  def publish(adapter, topic, message, metadata) when is_atom(adapter) do
-    adapter.publish(nil, topic, message, metadata)
+  @spec spec(t | spec, config) :: spec
+  def spec({adapter, config}, extra_config) when is_atom(adapter) do
+    {adapter, Keyword.merge(config, extra_config)}
+  end
+
+  def spec(adapter, extra_config) when is_atom(adapter) do
+    {adapter, extra_config}
   end
 end

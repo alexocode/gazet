@@ -3,11 +3,14 @@ defmodule Gazet do
 
   @type t :: %__MODULE__{
           adapter: adapter,
+          name: name,
           topic: topic
         }
-  defstruct [:adapter, :topic]
+  @enforce_keys [:adapter, :name, :topic]
+  defstruct [:adapter, :name, :topic]
 
   @type adapter :: Gazet.Adapter.spec()
+  @type name :: atom
   @type topic :: atom | binary
 
   @type message :: term
@@ -15,6 +18,8 @@ defmodule Gazet do
 
   @spec publish(t, message, metadata) :: :ok | {:error, reason :: any}
   def publish(%__MODULE__{} = gazet, message, metadata) do
-    Adapter.publish(gazet.adapter, gazet.topi, message, metadata)
+    gazet.adapter
+    |> Adapter.spec(name: gazet.name)
+    |> Adapter.publish(gazet.topic, message, metadata)
   end
 end
