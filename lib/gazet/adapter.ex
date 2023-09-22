@@ -5,7 +5,9 @@ defmodule Gazet.Adapter do
 
   @typedoc "A keyword list of configuration values, some shared, some specific for each adapter."
   @type config :: [shared_config | {atom, term}]
-  @type shared_config :: {:name, Gazet.name()}
+  @type shared_config ::
+          {:name, Gazet.name()}
+          | {:topic, Gazet.topic()}
 
   # @type handler :: (message, metadata -> :ok | :skip | {:ok, term} | {:error, term})
 
@@ -16,7 +18,6 @@ defmodule Gazet.Adapter do
 
   @callback publish(
               config,
-              topic :: Gazet.topic(),
               message :: Gazet.message(),
               metadata :: Gazet.metadata()
             ) :: :ok | {:error, reason :: any}
@@ -34,12 +35,11 @@ defmodule Gazet.Adapter do
 
   @spec publish(
           spec,
-          topic :: Gazet.topic(),
           message :: Gazet.message(),
           metadata :: Gazet.metadata()
         ) :: :ok | {:error, reason :: any}
-  def publish({adapter, config}, topic, message, metadata) when is_atom(adapter) do
-    adapter.publish(config, topic, message, metadata)
+  def publish({adapter, config}, message, metadata) when is_atom(adapter) do
+    adapter.publish(config, message, metadata)
   end
 
   @spec spec(t | spec, config) :: spec
