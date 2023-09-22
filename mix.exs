@@ -96,7 +96,7 @@ defmodule Gazet.MixProject do
   def package do
     [
       files: ["lib", "mix.exs", "CHANGELOG*", "LICENSE*", "README*", "version"],
-      licenses: ["MIT"],
+      licenses: ["HL3-CL-ECO-EXTR-FFD-MIL-MY-SOC-SV-TAL"],
       links: %{"GitHub" => @repo},
       maintainers: ["Alexandra Wolf <alexwolf1991@>"]
     ]
