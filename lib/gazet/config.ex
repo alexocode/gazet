@@ -10,6 +10,7 @@ defmodule Gazet.Config do
 
   @callback schema!(keyword) :: schema
   @callback docs(schema) :: String.t()
+  @callback typespec(schema) :: Macro.t()
   @callback validate(config, schema) :: {:ok, config} | {:error, reason :: term}
             when config: keyword
   @callback validate!(config, schema) :: config | no_return when config: keyword
@@ -22,6 +23,7 @@ defmodule Gazet.Config do
 
   defdelegate schema!(keyword), to: @implementation
   defdelegate docs(schema), to: @implementation
+  defdelegate typespec(schema), to: @implementation
   defdelegate validate(config, schema), to: @implementation
   defdelegate validate!(config, schema), to: @implementation
 end

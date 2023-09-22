@@ -9,6 +9,9 @@ if Code.loaded?(NimbleOptions) do
     defdelegate docs(schema), to: NimbleOptions
 
     @impl true
+    defdelegate typespec(schema), to: NimbleOptions, as: :option_typespec
+
+    @impl true
     defdelegate validate(config, schema), to: NimbleOptions
 
     @impl true
