@@ -19,7 +19,7 @@ defmodule Gazet do
   @spec publish(t, message, metadata) :: :ok | {:error, reason :: any}
   def publish(%__MODULE__{} = gazet, message, metadata) do
     gazet.adapter
-    |> Adapter.spec(name: gazet.name)
-    |> Adapter.publish(gazet.topic, message, metadata)
+    |> Adapter.spec(name: gazet.name, topic: gazet.topic)
+    |> Adapter.publish(message, metadata)
   end
 end
