@@ -16,11 +16,7 @@ defmodule Gazet.Adapter do
   # @callback subscribe(config, topic_id, subscription_id, handler) ::
   #             :ok | {:error, :already_exists} | {:error, term}
 
-  @callback publish(
-              config,
-              message :: Gazet.message(),
-              metadata :: Gazet.metadata()
-            ) :: :ok | {:error, reason :: any}
+  @callback publish(config, message :: Gazet.Message.t()) :: :ok | {:error, reason :: any}
 
   @optional_callbacks child_spec: 1
 
@@ -33,13 +29,9 @@ defmodule Gazet.Adapter do
     end
   end
 
-  @spec publish(
-          spec,
-          message :: Gazet.message(),
-          metadata :: Gazet.metadata()
-        ) :: :ok | {:error, reason :: any}
-  def publish({adapter, config}, message, metadata) when is_atom(adapter) do
-    adapter.publish(config, message, metadata)
+  @spec publish(spec, message :: Gazet.Message.t()) :: :ok | {:error, reason :: any}
+  def publish({adapter, config}, message) when is_atom(adapter) do
+    adapter.publish(config, message)
   end
 
   @spec spec(t | spec, config) :: spec
