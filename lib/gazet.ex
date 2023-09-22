@@ -19,6 +19,10 @@ schema =
   )
 
 defmodule Gazet do
+  @moduledoc """
+  ## Configuration
+  #{Gazet.Config.docs(schema)}
+  """
   alias Gazet.Adapter
   alias Gazet.Config
   alias Gazet.Message
