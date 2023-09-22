@@ -1,5 +1,6 @@
 defmodule Gazet do
   alias Gazet.Adapter
+  alias Gazet.Message
 
   @type t :: %__MODULE__{
           adapter: adapter,
@@ -13,14 +14,12 @@ defmodule Gazet do
   @type name :: atom
   @type topic :: atom | binary
 
-  @type message :: term
-  @type metadata :: map
-
-  @spec publish(t, message, metadata) :: :ok | {:error, reason :: any}
+  @spec publish(t, message :: Message.data(), metadata :: Message.metadata()) ::
+          :ok | {:error, reason :: any}
   def publish(%__MODULE__{} = gazet, message, metadata) do
     gazet
     |> adapter()
-    |> Adapter.publish(message, metadata)
+    |> Adapter.publish(%Message{topic: gazet.topic, data: message, metadata: metadata})
   end
 
   @spec adapter(t) :: Adapter.spec()
