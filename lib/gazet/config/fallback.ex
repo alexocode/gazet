@@ -20,6 +20,13 @@ defmodule Gazet.Config.Fallback do
   end
 
   @impl true
+  def typespec(schema) do
+    schema
+    |> Enum.map(fn {key, _spec} -> {key, {:term, [], Elixir}} end)
+    |> Enum.reduce(&{:|, [], [&1, &2]})
+  end
+
+  @impl true
   def validate(config, schema) do
     config_keys =
       config
