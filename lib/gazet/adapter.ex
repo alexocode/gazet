@@ -9,14 +9,11 @@ defmodule Gazet.Adapter do
           {:name, Gazet.name()}
           | {:topic, Gazet.topic()}
 
-  # @type handler :: (message, metadata -> :ok | :skip | {:ok, term} | {:error, term})
-
   @callback child_spec(config) :: Supervisor.child_spec()
 
-  # @callback subscribe(config, topic_id, subscription_id, handler) ::
-  #             :ok | {:error, :already_exists} | {:error, term}
-
   @callback publish(message :: Gazet.Message.t(), config) :: :ok | {:error, reason :: any}
+  @callback subscriber_spec(subscriber :: Gazet.Subscriber.spec(), config) ::
+              Supervisor.child_spec()
 
   @optional_callbacks child_spec: 1
 
