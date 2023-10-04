@@ -26,7 +26,6 @@ defmodule Gazet do
   use Gazet.Spec, schema: schema
 
   alias Gazet.Adapter
-  alias Gazet.Options
   alias Gazet.Message
 
   @typedoc "A module implementing `Gazet` or a `Gazet` spec."
