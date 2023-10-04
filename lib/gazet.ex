@@ -121,8 +121,9 @@ defmodule Gazet do
       @config config
       @otp_app Keyword.fetch!(config, :otp_app)
 
-      def child_spec(adapter_overrides) do
-        Gazet.child_spec(__MODULE__, adapter_overrides)
+      # TODO: Print a warning when passing additional information
+      def child_spec([]) do
+        Gazet.child_spec(__MODULE__)
       end
 
       @impl Gazet
