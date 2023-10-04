@@ -28,7 +28,10 @@ defmodule Gazet do
   alias Gazet.Message
 
   @typedoc "A module implementing `Gazet` or a `Gazet` spec."
-  @type t :: module | spec
+  @type t :: implementation | spec
+
+  @typedoc "A module implementing this behaviour."
+  @type implementation :: module
 
   @type spec :: %__MODULE__{otp_app: atom, adapter: adapter, name: name, topic: topic}
   @enforce_keys [:otp_app, :adapter, :name, :topic]
@@ -42,6 +45,18 @@ defmodule Gazet do
 
   @schema schema
 
+  @spec spec(spec) :: {:ok, spec} when spec: spec
+  def spec(%__MODULE__{} = spec), do: {:ok, spec}
+
+  @spec spec(module :: implementation) :: {:ok, spec} | {:error, reason :: any}
+  def spec(module) when is_atom(module) do
+    if function_exported?(module, :__gazet__, 0) do
+      module.__gazet__()
+    else
+      {:error, :invalid_implementation}
+    end
+  end
+
   @spec spec(config :: [unquote(Config.typespec(schema))]) ::
           {:ok, spec} | {:error, reason :: any}
   def spec(config) do
@@ -50,9 +65,21 @@ defmodule Gazet do
     end
   end
 
+  @spec spec!(spec) :: spec when spec: spec
+  @spec spec!(module :: implementation) :: spec | no_return
   @spec spec!(config :: [unquote(Config.typespec(schema))]) :: spec | no_return
-  def spec!(config) do
-    struct(__MODULE__, Config.validate!(config, @schema))
+  def spec!(to_spec) do
+    case spec(to_spec) do
+      {:ok, spec} ->
+        spec
+
+      {:error, exception} when is_exception(exception) ->
+        raise exception
+
+      {:error, reason} ->
+        raise ArgumentError,
+              "unable to construct Gazet.spec from `#{inspect(to_spec)}`: " <> inspect(reason)
+    end
   end
 
   @spec publish(t, message :: Message.data(), metadata :: Message.metadata()) ::
@@ -61,6 +88,13 @@ defmodule Gazet do
     gazet
     |> adapter()
     |> Adapter.publish(%Message{data: message, metadata: metadata})
+  end
+
+  @spec subscriber_spec(t, subscriber :: Gazet.Subscriber.spec()) :: Supervisor.child_spec()
+  def subscriber_spec(%__MODULE__{} = gazet, %Subscriber{} = subscriber) do
+    gazet
+    |> adapter()
+    |> Adapter.subscriber_spec(subscriber)
   end
 
   @spec adapter(t) :: Adapter.spec()
