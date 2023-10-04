@@ -27,8 +27,14 @@ defmodule Gazet.Adapter do
   end
 
   @spec publish(spec, message :: Gazet.Message.t()) :: :ok | {:error, reason :: any}
-  def publish({adapter, config}, message) when is_atom(adapter) do
+  def publish({adapter, config}, %Gazet.Message{} = message) when is_atom(adapter) do
     adapter.publish(config, message)
+  end
+
+  @spec subscriber_spec(spec, subscriber :: Gazet.Subscriber.spec()) :: Supervisor.child_spec()
+  def subscriber_spec({adapter, config}, %Gazet.Subscriber{} = subscriber)
+      when is_atom(adapter) do
+    adapter.subscriber_spec(subscriber, config)
   end
 
   @spec spec(t | spec, config) :: spec
