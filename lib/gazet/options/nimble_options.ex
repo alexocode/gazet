@@ -5,6 +5,7 @@ if Code.ensure_loaded?(NimbleOptions) do
     @type error :: {:error, NimbleOptions.ValidationError.t()}
 
     @impl true
+    def schema!(%NimbleOptions{} = schema), do: schema
     defdelegate schema!(schema), to: NimbleOptions, as: :new!
 
     @impl true
