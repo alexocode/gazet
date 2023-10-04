@@ -1,5 +1,5 @@
 schema =
-  [
+  Gazet.Options.schema!(
     handler: [
       type: :atom,
       required: true,
@@ -24,7 +24,7 @@ schema =
       doc:
         "Subscriber specific configuration, can be anything. Passed as last argument to all callbacks."
     ]
-  ]
+  )
 
 defmodule Gazet.Subscriber do
   # TODO: Write docs
