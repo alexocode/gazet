@@ -17,10 +17,12 @@ defmodule Gazet.Adapter do
 
   @optional_callbacks child_spec: 1
 
-  @spec child_spec(spec) :: Supervisor.child_spec() | nil
-  def child_spec({adapter, config}) when is_atom(adapter) do
+  @spec child_spec(spec, overrides :: keyword) :: Supervisor.child_spec() | nil
+  def child_spec({adapter, config}, overrides \\ []) when is_atom(adapter) do
     if function_exported?(adapter, :child_spec, 1) do
-      adapter.child_spec(config)
+      config
+      |> Keyword.merge(overrides)
+      |> adapter.child_spec()
     else
       nil
     end
