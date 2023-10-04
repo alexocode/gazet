@@ -66,11 +66,12 @@ defmodule Gazet do
 
   @callback __gazet__() :: spec
 
-  @spec child_spec(t, adapter_overrides :: keyword) :: Supervisor.child_spec()
-  def child_spec(gazet, adapter_overrides \\ []) do
+  # TODO: Probably add something like a Config server under a supervisor
+  @spec child_spec(t) :: Supervisor.child_spec()
+  def child_spec(gazet) do
     gazet
     |> adapter()
-    |> Adapter.child_spec(adapter_overrides)
+    |> Adapter.child_spec()
   end
 
   @spec publish(t, message :: Message.data(), metadata :: Message.metadata()) ::
@@ -89,8 +90,10 @@ defmodule Gazet do
   end
 
   @spec adapter(t) :: Adapter.spec()
-  def adapter(%__MODULE__{adapter: adapter, name: name, topic: topic}) do
-    Adapter.spec(adapter,
+  def adapter(%Gazet{adapter: %Gazet.Adapter{} = adapter}), do: adapter
+
+  def adapter(%Gazet{adapter: adapter, name: name, topic: topic}) do
+    Adapter.spec!(adapter,
       name: Module.concat(name, "Adapter"),
       topic: topic
     )

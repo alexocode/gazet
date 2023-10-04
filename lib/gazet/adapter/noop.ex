@@ -2,12 +2,12 @@ defmodule Gazet.Adapter.Noop do
   @behaviour Gazet.Adapter
 
   @impl true
-  def publish(_message, _config), do: :ok
+  def publish(_adapter, _message), do: :ok
 
   @impl true
-  def subscriber_spec({_module, opts}, _config) do
+  def subscriber_spec(_adapter, %Gazet.Subscriber{id: id}) do
     %{
-      id: opts[:id],
+      id: id,
       start: {__MODULE__, :start_nothing, []}
     }
   end
