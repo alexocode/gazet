@@ -41,19 +41,20 @@ defmodule Gazet.Subscriber do
   @type implementation :: module
 
   @type opts :: [unquote(Gazet.Options.typespec(schema))]
+  # TODO: Allow state modification?
   @type result :: :ok | :skip | {:error, reason :: any}
 
   @callback init(spec) :: {:ok, config()} | {:error, reason :: any}
 
-  @callback handle_batch(
-              topic :: Gazet.topic(),
-              batch ::
-                nonempty_list({
-                  Gazet.Message.data(),
-                  Gazet.Message.metadata()
-                }),
-              config :: config
-            ) :: result
+  # @callback handle_batch(
+  #             topic :: Gazet.topic(),
+  #             batch ::
+  #               nonempty_list({
+  #                 Gazet.Message.data(),
+  #                 Gazet.Message.metadata()
+  #               }),
+  #             config :: config
+  #           ) :: result
 
   @callback handle_message(
               topic :: Gazet.topic(),
@@ -69,8 +70,6 @@ defmodule Gazet.Subscriber do
               metadata :: Gazet.Message.metadata(),
               config :: config
             ) :: result
-
-  @optional_callbacks handle_message: 4, handle_error: 5
 
   @spec spec(spec | opts) :: Gazet.Spec.result(__MODULE__)
   def spec(values), do: Gazet.Spec.build(__MODULE__, values)
@@ -119,9 +118,14 @@ defmodule Gazet.Subscriber do
       end
 
       @impl Gazet.Subscriber
-      def init(%Gazet.Subscriber{extra: extra}), do: {:ok, extra}
+      def init(%Gazet.Subscriber{config: config}), do: {:ok, config}
 
-      defoverridable init: 1
+      @impl Gazet.Subscriber
+      def handle_error(reason, _topic, _message, _metadata, _config) do
+        {:error, reason}
+      end
+
+      defoverridable init: 1, handle_error: 5
     end
   end
 end
