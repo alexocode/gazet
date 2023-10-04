@@ -1,9 +1,9 @@
 schema =
   Gazet.Options.schema!(
-    handler: [
+    module: [
       type: :atom,
       required: true,
-      doc: "The actual subscriber module that handles messages."
+      doc: "A module implementing the `Gazet.Subscriber` behaviour."
     ],
     otp_app: [type: :atom, required: false, doc: "Defaults to the source's `otp_app`"],
     id: [
@@ -19,10 +19,9 @@ schema =
         "A keyword list specific to the source's adapter and `c:Gazet.Adapter.subscriber_spec/2`. Check the adapter docs for details."
     ],
     config: [
-      type: :any,
+      type: :keyword_list,
       required: false,
-      doc:
-        "Subscriber specific configuration, can be anything. Passed as last argument to all callbacks."
+      doc: "Subscriber specific configuration. Passed as last argument to all callbacks."
     ]
   )
 
@@ -53,14 +52,14 @@ defmodule Gazet.Subscriber do
                   Gazet.Message.data(),
                   Gazet.Message.metadata()
                 }),
-              config :: config()
+              config :: config
             ) :: result
 
   @callback handle_message(
               topic :: Gazet.topic(),
               message :: Gazet.Message.data(),
               metadata :: Gazet.Message.metadata(),
-              config :: config()
+              config :: config
             ) :: result
 
   @callback handle_error(
@@ -68,7 +67,7 @@ defmodule Gazet.Subscriber do
               topic :: Gazet.topic(),
               message :: Gazet.Message.data(),
               metadata :: Gazet.Message.metadata(),
-              config :: config()
+              config :: config
             ) :: result
 
   @optional_callbacks handle_message: 4, handle_error: 5
@@ -82,9 +81,14 @@ defmodule Gazet.Subscriber do
   def child_spec(opts) do
     spec = spec!(opts)
 
-    spec.source
-    |> Gazet.spec!()
-    |> Gazet.subscriber_spec(spec)
+    Gazet.subscriber_spec(spec.source, spec)
+  end
+
+  @spec child_spec(implementation, opts) :: Supervisor.child_spec()
+  def child_spec(module, opts) when is_atom(module) do
+    opts
+    |> Keyword.put(:module, module)
+    |> child_spec()
   end
 
   @impl Gazet.Spec
@@ -95,23 +99,23 @@ defmodule Gazet.Subscriber do
     end
   end
 
-  defmacro __using__(config) do
-    quote bind_quoted: [config: config] do
+  defmacro __using__(opts) do
+    quote bind_quoted: [opts: opts] do
       @behaviour Gazet.Subscriber
 
-      @config config
-              |> Keyword.put_new(:id, __MODULE__)
-              |> Keyword.put_new_lazy(:otp_app, fn -> config[:source].__gazet__()[:otp_app] end)
+      @opts opts
+            |> Keyword.put_new(:id, __MODULE__)
+            |> Keyword.put_new_lazy(:otp_app, fn -> Gazet.spec!(opts[:source]).otp_app end)
 
       def child_spec(extra_config) do
-        otp_app = extra_config[:otp_app] || @config[:otp_app]
+        otp_app = extra_config[:otp_app] || @opts[:otp_app]
 
-        config =
-          @config
+        opts =
+          @opts
           |> Keyword.merge(Application.get_env(otp_app, __MODULE__, []))
           |> Keyword.merge(extra_config)
 
-        Gazet.Subscriber.child_spec(__MODULE__, config)
+        Gazet.Subscriber.child_spec(__MODULE__, opts)
       end
 
       @impl Gazet.Subscriber
