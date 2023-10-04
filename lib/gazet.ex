@@ -66,10 +66,12 @@ defmodule Gazet do
 
   @callback __gazet__() :: spec
 
-  @spec spec(t | opts) :: Gazet.Spec.result(__MODULE__)
-  def spec(to_spec), do: Gazet.Spec.build(__MODULE__, to_spec)
-  @spec spec!(t | opts) :: spec | no_return
-  def spec!(to_spec), do: Gazet.Spec.build!(__MODULE__, to_spec)
+  @spec child_spec(t, adapter_overrides :: keyword) :: Supervisor.child_spec()
+  def child_spec(gazet, adapter_overrides \\ []) do
+    gazet
+    |> adapter()
+    |> Adapter.child_spec(adapter_overrides)
+  end
 
   @spec publish(t, message :: Message.data(), metadata :: Message.metadata()) ::
           :ok | {:error, reason :: any}
@@ -100,6 +102,11 @@ defmodule Gazet do
     |> adapter()
   end
 
+  @spec spec(t | opts) :: Gazet.Spec.result(__MODULE__)
+  def spec(to_spec), do: Gazet.Spec.build(__MODULE__, to_spec)
+  @spec spec!(t | opts) :: spec | no_return
+  def spec!(to_spec), do: Gazet.Spec.build!(__MODULE__, to_spec)
+
   @impl Gazet.Spec
   def __spec__(module) when is_atom(module), do: module.__gazet__()
   def __spec__(opts), do: super(opts)
@@ -110,6 +117,10 @@ defmodule Gazet do
 
       @config config
       @otp_app Keyword.fetch!(config, :otp_app)
+
+      def child_spec(adapter_overrides) do
+        Gazet.child_spec(__MODULE__, adapter_overrides)
+      end
 
       @impl Gazet
       def __gazet__ do
