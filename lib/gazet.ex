@@ -80,7 +80,7 @@ defmodule Gazet do
       @impl Gazet
       def __gazet__ do
         config = unquote(config)
-        env_config = Application.get_env(unquote(otp_app), __MODULE__)
+        env_config = Application.get_env(unquote(otp_app), __MODULE__, [])
 
         config
         |> Keyword.merge(env_config)
