@@ -1,5 +1,10 @@
-raw_schema =
+schema =
   [
+    handler: [
+      type: :atom,
+      required: true,
+      doc: "The actual subscriber module that handles messages."
+    ],
     otp_app: [type: :atom, required: false, doc: "Defaults to the source's `otp_app`"],
     id: [
       type: {:or, [:atom, :string]},
@@ -8,7 +13,7 @@ raw_schema =
     ],
     source: [type: {:or, [:atom, {:struct, Gazet}]}, required: true],
     adapter_opts: [
-      type: :keyword,
+      type: :keyword_list,
       default: [],
       doc:
         "A keyword list specific to the source's adapter and `c:Gazet.Adapter.subscriber_spec/2`. Check the adapter docs for details."
@@ -21,41 +26,25 @@ raw_schema =
     ]
   ]
 
-schema = Gazet.Config.schema!(raw_schema)
-
 defmodule Gazet.Subscriber do
   # TODO: Write docs
   @moduledoc """
   ## Configuration
   #{Gazet.Config.docs(schema)}
   """
+  use Gazet.Spec,
+    schema: schema,
+    typespecs_for: [:config]
+
+  @type t :: implementation | spec
 
   @typedoc "A module implementing this behaviour."
   @type implementation :: module
 
-  @typedoc raw_schema[:id][:doc]
-  @type id :: atom | binary
-  @typedoc raw_schema[:source][:doc]
-  @type source :: Gazet.t() | Gazet.module()
-  @typedoc raw_schema[:adapter_opts][:doc]
-  @type adapter_opts :: keyword
-  @typedoc raw_schema[:config][:doc]
-  @type config :: term
-
-  @type spec :: %__MODULE__{
-          module: implementation,
-          otp_app: atom,
-          id: id,
-          source: source,
-          adapter_opts: adapter_opts,
-          config: config
-        }
-  @enforce_keys [:module, :otp_app, :id, :source]
-  defstruct [:module, :otp_app, :id, :source, {:adapter_opts, []}, :config]
-
+  @type opts :: [unquote(Gazet.Config.typespec(schema))]
   @type result :: :ok | :skip | {:error, reason :: any}
 
-  @callback init(spec) :: {:ok, config} | {:error, reason :: any}
+  @callback init(spec) :: {:ok, config()} | {:error, reason :: any}
 
   @callback handle_batch(
               topic :: Gazet.topic(),
@@ -64,14 +53,14 @@ defmodule Gazet.Subscriber do
                   Gazet.Message.data(),
                   Gazet.Message.metadata()
                 }),
-              config :: config
+              config :: config()
             ) :: result
 
   @callback handle_message(
               topic :: Gazet.topic(),
               message :: Gazet.Message.data(),
               metadata :: Gazet.Message.metadata(),
-              config :: config
+              config :: config()
             ) :: result
 
   @callback handle_error(
@@ -79,37 +68,31 @@ defmodule Gazet.Subscriber do
               topic :: Gazet.topic(),
               message :: Gazet.Message.data(),
               metadata :: Gazet.Message.metadata(),
-              config :: config
+              config :: config()
             ) :: result
 
   @optional_callbacks handle_message: 4, handle_error: 5
 
-  @schema schema
+  @spec spec(spec | opts) :: Gazet.Spec.result(__MODULE__)
+  def spec(values), do: Gazet.Spec.build(__MODULE__, values)
+  @spec spec!(spec | opts) :: spec | no_return
+  def spec!(values), do: Gazet.Spec.build!(__MODULE__, values)
 
-  @spec child_spec(module :: implementation, opts :: [unquote(Gazet.Config.typespec(schema))]) ::
-          Supervisor.child_spec()
-  def child_spec(module, opts) when is_atom(module) do
-    spec = spec!(module, opts)
+  @spec child_spec(opts) :: Supervisor.child_spec()
+  def child_spec(opts) do
+    spec = spec!(opts)
 
     spec.source
     |> Gazet.spec!()
     |> Gazet.subscriber_spec(spec)
   end
 
-  @spec spec(module :: implementation, opts :: [unquote(Gazet.Config.typespec(schema))]) ::
-          {:ok, spec} | {:error, reason :: any}
-  def spec(module, opts) do
-    with {:ok, opts} <- Gazet.Config.validate(opts, @schema) do
-      {:ok, struct(__MODULE__, [{:module, module} | opts])}
+  @impl Gazet.Spec
+  def __spec__(values) do
+    with {:ok, subscriber_spec} <- super(values),
+         {:ok, gazet_spec} <- Gazet.spec(subscriber_spec.source) do
+      {:ok, %{subscriber_spec | otp_app: subscriber_spec.otp_app || gazet_spec.otp_app}}
     end
-  end
-
-  @spec spec!(module :: implementation, opts :: [unquote(Gazet.Config.typespec(schema))]) ::
-          spec | no_return
-  def spec!(module, opts) do
-    opts = Gazet.Config.validate!(opts, @schema)
-
-    struct(__MODULE__, [{:module, module} | opts])
   end
 
   defmacro __using__(config) do

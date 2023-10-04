@@ -23,6 +23,8 @@ defmodule Gazet do
   ## Configuration
   #{Gazet.Config.docs(schema)}
   """
+  use Gazet.Spec, schema: schema
+
   alias Gazet.Adapter
   alias Gazet.Config
   alias Gazet.Message
@@ -33,54 +35,16 @@ defmodule Gazet do
   @typedoc "A module implementing this behaviour."
   @type implementation :: module
 
-  @type spec :: %__MODULE__{otp_app: atom, adapter: adapter, name: name, topic: topic}
-  @enforce_keys [:otp_app, :adapter, :name, :topic]
-  defstruct [:otp_app, :adapter, :name, :topic]
+  @type opts :: [unquote(Gazet.Config.typespec(schema))]
 
   @type adapter :: Adapter.t() | Adapter.spec()
   @type name :: atom
   @type topic :: atom | binary
 
-  @callback __gazet__() :: spec
-
-  @schema schema
-
-  @spec spec(spec) :: {:ok, spec} when spec: spec
-  def spec(%__MODULE__{} = spec), do: {:ok, spec}
-
-  @spec spec(module :: implementation) :: {:ok, spec} | {:error, reason :: any}
-  def spec(module) when is_atom(module) do
-    if function_exported?(module, :__gazet__, 0) do
-      module.__gazet__()
-    else
-      {:error, :invalid_implementation}
-    end
-  end
-
-  @spec spec(config :: [unquote(Config.typespec(schema))]) ::
-          {:ok, spec} | {:error, reason :: any}
-  def spec(config) do
-    with {:ok, config} <- Config.validate(config, @schema) do
-      {:ok, struct(__MODULE__, config)}
-    end
-  end
-
-  @spec spec!(spec) :: spec when spec: spec
-  @spec spec!(module :: implementation) :: spec | no_return
-  @spec spec!(config :: [unquote(Config.typespec(schema))]) :: spec | no_return
-  def spec!(to_spec) do
-    case spec(to_spec) do
-      {:ok, spec} ->
-        spec
-
-      {:error, exception} when is_exception(exception) ->
-        raise exception
-
-      {:error, reason} ->
-        raise ArgumentError,
-              "unable to construct Gazet.spec from `#{inspect(to_spec)}`: " <> inspect(reason)
-    end
-  end
+  @spec spec(spec | opts) :: Gazet.Spec.result(__MODULE__)
+  def spec(values), do: Gazet.Spec.build(__MODULE__, values)
+  @spec spec!(spec | opts) :: spec | no_return
+  def spec!(values), do: Gazet.Spec.build!(__MODULE__, values)
 
   @spec publish(t, message :: Message.data(), metadata :: Message.metadata()) ::
           :ok | {:error, reason :: any}
@@ -91,7 +55,7 @@ defmodule Gazet do
   end
 
   @spec subscriber_spec(t, subscriber :: Gazet.Subscriber.spec()) :: Supervisor.child_spec()
-  def subscriber_spec(%__MODULE__{} = gazet, %Subscriber{} = subscriber) do
+  def subscriber_spec(%__MODULE__{} = gazet, %Gazet.Subscriber{} = subscriber) do
     gazet
     |> adapter()
     |> Adapter.subscriber_spec(subscriber)
