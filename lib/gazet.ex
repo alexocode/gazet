@@ -10,7 +10,7 @@ schema =
       doc:
         "The adapter used for publishing and subscribing; either a module or a {module, config} tuple."
     ],
-    name: [type: :atom, required: true, doc: "The name of the Gazet (user for Supervision)."],
+    name: [type: :atom, required: true, doc: "The name of the Gazet (used for Supervision)."],
     topic: [
       type: {:or, [:atom, :string]},
       required: true,
@@ -20,6 +20,30 @@ schema =
 
 defmodule Gazet do
   @moduledoc """
+
+  defmodule Backend.Content.Events do
+    use Gazet,
+      otp_app: :sevenmind,
+      adapter: {Backend.External.GooglePubSubAdapter, ...},
+      topic: "content"
+  end
+
+  Backend.Content.Events.publish(%{some: "message"}, %{some: "metadata"})
+
+  defmodule MyContentEventHandler do
+    use Gazet.Subscriber,
+      id: "content-subscriber-for-some-subdomain",
+      source: Backend.Content.Events,
+      additional_config: "..."
+
+    def init(config) do
+      {:ok, Keyword.put(config, :something, "blalbla")}
+    end
+
+    def handle_event(_topic, %{some: message}, metadata, _subscriber_config) do
+    end
+  end
+
   ## Configuration
   #{Gazet.Options.docs(schema)}
   """
@@ -40,21 +64,23 @@ defmodule Gazet do
   @type name :: atom
   @type topic :: atom | binary
 
-  @spec spec(spec | opts) :: Gazet.Spec.result(__MODULE__)
-  def spec(values), do: Gazet.Spec.build(__MODULE__, values)
-  @spec spec!(spec | opts) :: spec | no_return
-  def spec!(values), do: Gazet.Spec.build!(__MODULE__, values)
+  @callback __gazet__() :: spec
+
+  @spec spec(t | opts) :: Gazet.Spec.result(__MODULE__)
+  def spec(to_spec), do: Gazet.Spec.build(__MODULE__, to_spec)
+  @spec spec!(t | opts) :: spec | no_return
+  def spec!(to_spec), do: Gazet.Spec.build!(__MODULE__, to_spec)
 
   @spec publish(t, message :: Message.data(), metadata :: Message.metadata()) ::
           :ok | {:error, reason :: any}
-  def publish(%__MODULE__{} = gazet, message, metadata) do
+  def publish(gazet, message, metadata) do
     gazet
     |> adapter()
     |> Adapter.publish(%Message{data: message, metadata: metadata})
   end
 
   @spec subscriber_spec(t, subscriber :: Gazet.Subscriber.spec()) :: Supervisor.child_spec()
-  def subscriber_spec(%__MODULE__{} = gazet, %Gazet.Subscriber{} = subscriber) do
+  def subscriber_spec(gazet, %Gazet.Subscriber{} = subscriber) do
     gazet
     |> adapter()
     |> Adapter.subscriber_spec(subscriber)
@@ -68,20 +94,31 @@ defmodule Gazet do
     )
   end
 
-  defmacro __using__(config) do
-    otp_app = Keyword.fetch!(config, :otp_app)
+  def adapter(gazet) do
+    gazet
+    |> spec!()
+    |> adapter()
+  end
 
-    quote bind_quoted: [otp_app: otp_app, config: config] do
+  @impl Gazet.Spec
+  def __spec__(module) when is_atom(module), do: module.__gazet__()
+  def __spec__(opts), do: super(opts)
+
+  defmacro __using__(config) do
+    quote bind_quoted: [config: config] do
       @behaviour Gazet
+
+      @config config
+      @otp_app Keyword.fetch!(config, :otp_app)
 
       @impl Gazet
       def __gazet__ do
-        config = unquote(config)
-        env_config = Application.get_env(unquote(otp_app), __MODULE__, [])
+        env_config = Application.get_env(@otp_app, __MODULE__, [])
 
-        config
+        @config
         |> Keyword.merge(env_config)
-        |> Gazet.spec!()
+        |> Keyword.put_new(:name, __MODULE__)
+        |> Gazet.__spec__()
       end
     end
   end
