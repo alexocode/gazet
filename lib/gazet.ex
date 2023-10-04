@@ -1,5 +1,5 @@
 schema =
-  Gazet.Config.schema!(
+  Gazet.Options.schema!(
     otp_app: [
       type: :atom,
       required: true
@@ -21,12 +21,12 @@ schema =
 defmodule Gazet do
   @moduledoc """
   ## Configuration
-  #{Gazet.Config.docs(schema)}
+  #{Gazet.Options.docs(schema)}
   """
   use Gazet.Spec, schema: schema
 
   alias Gazet.Adapter
-  alias Gazet.Config
+  alias Gazet.Options
   alias Gazet.Message
 
   @typedoc "A module implementing `Gazet` or a `Gazet` spec."
@@ -35,7 +35,7 @@ defmodule Gazet do
   @typedoc "A module implementing this behaviour."
   @type implementation :: module
 
-  @type opts :: [unquote(Gazet.Config.typespec(schema))]
+  @type opts :: [unquote(Gazet.Options.typespec(schema))]
 
   @type adapter :: Adapter.t() | Adapter.spec()
   @type name :: atom
