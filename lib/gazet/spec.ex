@@ -57,25 +57,25 @@ defmodule Gazet.Spec do
     quote location: :keep, bind_quoted: [schema: schema, typespecs_for: typespecs_for] do
       @behaviour Gazet.Spec
 
-      Gazet.Config.map(schema, fn field, spec ->
+      Gazet.Options.map(schema, fn field, spec ->
         if typespecs_for == :all or field in typespecs_for do
           unless is_nil(spec[:doc]), do: @typedoc(spec[:doc])
-          @type unquote({field, [], Elixir}) :: unquote(Gazet.Config.typespec(schema, field))
+          @type unquote({field, [], Elixir}) :: unquote(Gazet.Options.typespec(schema, field))
         end
       end)
 
-      @typedoc Gazet.Config.docs(schema)
+      @typedoc Gazet.Options.docs(schema)
       @type spec :: %__MODULE__{
               unquote_splicing(
-                Gazet.Config.map(schema, fn f, _ -> {f, Gazet.Config.typespec(schema, f)} end)
+                Gazet.Options.map(schema, fn f, _ -> {f, Gazet.Options.typespec(schema, f)} end)
               )
             }
-      defstruct(Gazet.Config.map(schema, &{&1, &2[:default]}))
+      defstruct(Gazet.Options.map(schema, &{&1, &2[:default]}))
 
       @impl Gazet.Spec
-      @schema Gazet.Config.schema!(schema)
+      @schema Gazet.Options.schema!(schema)
       def __spec__(values) do
-        with {:ok, values} <- Gazet.Config.validate(values, @schema) do
+        with {:ok, values} <- Gazet.Options.validate(values, @schema) do
           {:ok, struct(__MODULE__, values)}
         end
       end

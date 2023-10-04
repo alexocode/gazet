@@ -30,7 +30,7 @@ defmodule Gazet.Subscriber do
   # TODO: Write docs
   @moduledoc """
   ## Configuration
-  #{Gazet.Config.docs(schema)}
+  #{Gazet.Options.docs(schema)}
   """
   use Gazet.Spec,
     schema: schema,
@@ -41,7 +41,7 @@ defmodule Gazet.Subscriber do
   @typedoc "A module implementing this behaviour."
   @type implementation :: module
 
-  @type opts :: [unquote(Gazet.Config.typespec(schema))]
+  @type opts :: [unquote(Gazet.Options.typespec(schema))]
   @type result :: :ok | :skip | {:error, reason :: any}
 
   @callback init(spec) :: {:ok, config()} | {:error, reason :: any}

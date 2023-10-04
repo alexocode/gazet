@@ -1,4 +1,4 @@
-defmodule Gazet.Config do
+defmodule Gazet.Options do
   @moduledoc """
   Functions to validate config against a given schema.
 

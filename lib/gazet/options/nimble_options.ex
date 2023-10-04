@@ -1,6 +1,6 @@
 if Code.ensure_loaded?(NimbleOptions) do
-  defmodule Gazet.Config.NimbleOptions do
-    @behaviour Gazet.Config
+  defmodule Gazet.Options.NimbleOptions do
+    @behaviour Gazet.Options
 
     @type error :: {:error, NimbleOptions.ValidationError.t()}
 

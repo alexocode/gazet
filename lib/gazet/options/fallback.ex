@@ -1,7 +1,7 @@
-defmodule Gazet.Config.Fallback do
+defmodule Gazet.Options.Fallback do
   @moduledoc false
 
-  @behaviour Gazet.Config
+  @behaviour Gazet.Options
 
   @type error :: {:error, {:invalid_keys, expected: list(atom), found: list(atom)}}
 
