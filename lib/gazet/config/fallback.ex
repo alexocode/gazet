@@ -3,8 +3,15 @@ defmodule Gazet.Config.Fallback do
 
   @behaviour Gazet.Config
 
+  @type error :: {:error, {:invalid_keys, expected: list(atom), found: list(atom)}}
+
   @impl true
   def schema!(schema), do: schema
+
+  @impl true
+  def map(schema, mapper) do
+    Enum.map(schema, fn {field, spec} -> mapper.(field, spec) end)
+  end
 
   @impl true
   def docs(schema) do
@@ -25,6 +32,9 @@ defmodule Gazet.Config.Fallback do
     |> Enum.map(fn {key, _spec} -> {key, {:term, [], Elixir}} end)
     |> Enum.reduce(&{:|, [], [&1, &2]})
   end
+
+  @impl true
+  def typespec(_schema, _field), do: {:term, [], Elixir}
 
   @impl true
   def validate(config, schema) do
