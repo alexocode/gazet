@@ -61,7 +61,10 @@ defmodule Gazet.Adapter do
 
   @spec spec!(t | spec, opts) :: spec | no_return
   def spec!({adapter, config}, opts) when is_atom(adapter) do
-    raw_spec = Keyword.update(opts, :config, config, &Keyword.merge(config, &1))
+    raw_spec =
+      opts
+      |> Keyword.put(:module, adapter)
+      |> Keyword.update(:config, config, &Keyword.merge(config, &1))
 
     Gazet.Spec.build!(__MODULE__, raw_spec)
   end
