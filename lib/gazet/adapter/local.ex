@@ -22,12 +22,12 @@ defmodule Gazet.Adapter.Local do
 
   @impl true
   def subscriber_spec(%{name: name, topic: topic}, %Subscriber{} = subscriber) do
-    subscriber
-    |> put_in([Access.key!(:adapter_opts), :on_start], fn ->
-      with {:ok, _} <- Registry.register(name, topic, :ignored) do
-        :ok
+    Subscriber.Generic.child_spec(subscriber,
+      on_start: fn ->
+        with {:ok, _} <- Registry.register(name, topic, :ignored) do
+          :ok
+        end
       end
-    end)
-    |> Subscriber.Generic.child_spec()
+    )
   end
 end
