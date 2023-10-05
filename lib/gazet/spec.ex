@@ -4,21 +4,20 @@ defmodule Gazet.Spec do
   @type t :: t(module())
   @type t(module) :: %{:__struct__ => module, optional(atom()) => any()}
 
-  @type result(module) ::
-          {:ok, t(module)}
-          | {:error, {:no_spec, module}}
-          | {:error, reason :: any()}
+  @type result(module) :: ok(module) | error(module)
+  @type ok(module) :: {:ok, t(module)}
+  @type error(module) :: {:error, {:no_spec, module}} | {:error, reason :: any()}
 
-  @callback __spec__(keyword) :: {:ok, t()} | {:error, reason :: any()}
+  @callback __spec__(any) :: {:ok, t()} | {:error, reason :: any()}
 
   defguard is_spec(value, module) when is_struct(value, module)
 
-  @spec build(t(module) | module, keyword) :: result(module) when module: module
+  @spec build(t(module) | module, any) :: result(module) when module: module
   def build(module_or_spec, values \\ [])
 
   def build(%_{} = spec, []), do: {:ok, spec}
 
-  def build(%module{} = spec, values) do
+  def build(%module{} = spec, values) when is_list(values) do
     values =
       spec
       |> Map.from_struct()
@@ -28,6 +27,8 @@ defmodule Gazet.Spec do
     build(module, values)
   end
 
+  def build(module, %module{} = spec), do: {:ok, spec}
+
   def build(module, values) when is_atom(module) do
     if function_exported?(module, :__spec__, 1) do
       module.__spec__(values)
@@ -36,7 +37,7 @@ defmodule Gazet.Spec do
     end
   end
 
-  @spec build!(t(module) | module, keyword) :: t(module) | no_return when module: module
+  @spec build!(t(module) | module, any) :: t(module) | no_return when module: module
   def build!(module_or_spec, values) do
     case build(module_or_spec, values) do
       {:ok, spec} ->
