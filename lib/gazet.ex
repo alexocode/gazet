@@ -232,8 +232,55 @@ defmodule Gazet do
     def config!(gazet, unquote(field)), do: Map.fetch!(spec!(gazet), unquote(field))
   end)
 
+  @doc """
+  Transforms a module-based Gazet or a list of options into a `t:Gazet.spec`.
+
+  ## Examples
+
+      iex> spec(otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic")
+      {:ok, %Gazet{otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic"}}
+
+      iex> defmodule MyCoolModuleGazet do
+      ...>   use Gazet,
+      ...>     otp_app: :my_cool_app,
+      ...>     adapter: {Gazet.Adapter.Local, my: "config"},
+      ...>     topic: "the_best_topic"
+      ...> end
+      iex> spec(MyCoolModuleGazet)
+      {:ok, %Gazet{otp_app: :my_cool_app, adapter: {Gazet.Adapter.Local, my: "config"}, name: MyCoolModuleGazet, topic: "the_best_topic"}}
+
+      iex> spec(:wat)
+      {:error, {:missing_impl, Gazet, :wat}}
+
+      iex> spec("wat")
+      {:error, {:unexpected_value, "wat"}}
+  """
   @spec spec(t | opts) :: Gazet.Spec.result(__MODULE__)
   def spec(to_spec), do: Gazet.Spec.build(__MODULE__, to_spec)
+
+  @doc """
+  Like `spec/1` but raises any errors.
+
+  ## Examples
+
+      iex> spec!(otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic")
+      %Gazet{otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic"}
+
+      iex> defmodule MyCoolModuleGazet2 do
+      ...>   use Gazet,
+      ...>     otp_app: :my_cool_app,
+      ...>     adapter: {Gazet.Adapter.Local, my: "config"},
+      ...>     topic: "the_best_topic"
+      ...> end
+      iex> spec!(MyCoolModuleGazet2)
+      %Gazet{otp_app: :my_cool_app, adapter: {Gazet.Adapter.Local, my: "config"}, name: MyCoolModuleGazet2, topic: "the_best_topic"}
+
+      iex> spec!(:wat)
+      ** (ArgumentError) unable to construct Gazet: {:missing_impl, Gazet, :wat}
+
+      iex> spec!("wat")
+      ** (ArgumentError) unable to construct Gazet: {:unexpected_value, "wat"}
+  """
   @spec spec!(t | opts) :: spec | no_return
   def spec!(to_spec), do: Gazet.Spec.build!(__MODULE__, to_spec)
 
@@ -263,11 +310,14 @@ defmodule Gazet do
 
       @impl Gazet
       def __gazet__ do
-        env_config = Application.get_env(@otp_app, __MODULE__, [])
-
-        @config
-        |> Keyword.merge(env_config)
-        |> Keyword.put_new(:name, __MODULE__)
+        [
+          {:gazet, Gazet},
+          {@otp_app, Gazet},
+          {@otp_app, __MODULE__}
+        ]
+        |> Gazet.Env.resolve()
+        |> Keyword.put(:name, __MODULE__)
+        |> Keyword.merge(@config)
         |> Gazet.__spec__()
       end
     end
