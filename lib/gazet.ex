@@ -47,24 +47,24 @@ defmodule Gazet do
   ## Configuration
   #{Gazet.Options.docs(schema)}
   """
-  use Gazet.Spec, schema: schema
+  use Gazet.Blueprint, schema: schema
 
   alias Gazet.Adapter
   alias Gazet.Message
 
-  @typedoc "A module implementing `Gazet` or a `Gazet` spec."
-  @type t :: implementation | spec
+  @typedoc "A module implementing `Gazet` or a `Gazet` blueprint."
+  @type t :: implementation | blueprint
 
   @typedoc "A module implementing this behaviour."
   @type implementation :: module
 
   @type opts :: [unquote(Gazet.Options.typespec(schema))]
 
-  @type adapter :: Adapter.t() | Adapter.spec()
+  @type adapter :: Adapter.t() | Adapter.blueprint()
   @type name :: atom
   @type topic :: atom | binary
 
-  @callback __gazet__() :: spec
+  @callback __gazet__() :: blueprint
 
   # TODO: Probably add something like a Config server under a supervisor
   @doc """
@@ -107,7 +107,7 @@ defmodule Gazet do
   end
 
   @doc """
-  Returns the `t:Gazet.Adapter.spec` for the given `Gazet`.
+  Returns the `t:Gazet.Adapter.blueprint` for the given `Gazet`.
 
   ## Examples
 
@@ -143,11 +143,11 @@ defmodule Gazet do
         config: [my: "config"]
       }
   """
-  @spec adapter(t) :: Adapter.spec()
+  @spec adapter(t) :: Adapter.blueprint()
   def adapter(%Gazet{adapter: %Gazet.Adapter{} = adapter}), do: adapter
 
   def adapter(%Gazet{adapter: adapter, name: name, topic: topic}) do
-    Adapter.spec!(adapter,
+    Adapter.blueprint!(adapter,
       name: Module.concat(name, "Adapter"),
       topic: topic
     )
@@ -155,7 +155,7 @@ defmodule Gazet do
 
   def adapter(gazet) do
     gazet
-    |> spec!()
+    |> blueprint!()
     |> adapter()
   end
 
@@ -198,9 +198,10 @@ defmodule Gazet do
   Gazet.Options.map(schema, fn field, _spec ->
     type = Gazet.Options.typespec(schema, field)
 
-    @spec config(t | opts, unquote(field)) :: {:ok, unquote(type)} | Gazet.Spec.error(__MODULE__)
+    @spec config(t | opts, unquote(field)) ::
+            {:ok, unquote(type)} | Gazet.Blueprint.error(__MODULE__)
     def config(gazet, unquote(field)) do
-      with {:ok, %{unquote(field) => value}} <- spec(gazet) do
+      with {:ok, %{unquote(field) => value}} <- blueprint(gazet) do
         {:ok, value}
       end
     end
@@ -246,15 +247,15 @@ defmodule Gazet do
     type = Gazet.Options.typespec(schema, field)
 
     @spec config!(t | opts, unquote(field)) :: unquote(type) | no_return
-    def config!(gazet, unquote(field)), do: Map.fetch!(spec!(gazet), unquote(field))
+    def config!(gazet, unquote(field)), do: Map.fetch!(blueprint!(gazet), unquote(field))
   end)
 
   @doc """
-  Transforms a module-based Gazet or a list of options into a `t:Gazet.spec`.
+  Transforms a module-based Gazet or a list of options into a `t:Gazet.Blueprint`.
 
   ## Examples
 
-      iex> spec(otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic")
+      iex> blueprint(otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic")
       {:ok, %Gazet{otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic"}}
 
       iex> defmodule MyCoolModuleGazet do
@@ -263,24 +264,24 @@ defmodule Gazet do
       ...>     adapter: {Gazet.Adapter.Local, my: "config"},
       ...>     topic: "the_best_topic"
       ...> end
-      iex> spec(MyCoolModuleGazet)
+      iex> blueprint(MyCoolModuleGazet)
       {:ok, %Gazet{otp_app: :my_cool_app, adapter: {Gazet.Adapter.Local, my: "config"}, name: MyCoolModuleGazet, topic: "the_best_topic"}}
 
-      iex> spec(:wat)
+      iex> blueprint(:wat)
       {:error, {:missing_impl, Gazet, :wat}}
 
-      iex> spec("wat")
+      iex> blueprint("wat")
       {:error, {:unexpected_value, "wat"}}
   """
-  @spec spec(t | opts) :: Gazet.Spec.result(__MODULE__)
-  def spec(to_spec), do: Gazet.Spec.build(__MODULE__, to_spec)
+  @spec blueprint(t | opts) :: Gazet.Blueprint.result(__MODULE__)
+  def blueprint(value), do: Gazet.Blueprint.build(__MODULE__, value)
 
   @doc """
-  Like `spec/1` but raises any errors.
+  Like `blueprint/1` but raises any errors.
 
   ## Examples
 
-      iex> spec!(otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic")
+      iex> blueprint!(otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic")
       %Gazet{otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyCoolGazet, topic: "great topic"}
 
       iex> defmodule MyCoolModuleGazet2 do
@@ -289,20 +290,20 @@ defmodule Gazet do
       ...>     adapter: {Gazet.Adapter.Local, my: "config"},
       ...>     topic: "the_best_topic"
       ...> end
-      iex> spec!(MyCoolModuleGazet2)
+      iex> blueprint!(MyCoolModuleGazet2)
       %Gazet{otp_app: :my_cool_app, adapter: {Gazet.Adapter.Local, my: "config"}, name: MyCoolModuleGazet2, topic: "the_best_topic"}
 
-      iex> spec!(:wat)
+      iex> blueprint!(:wat)
       ** (ArgumentError) unable to construct Gazet: {:missing_impl, Gazet, :wat}
 
-      iex> spec!("wat")
+      iex> blueprint!("wat")
       ** (ArgumentError) unable to construct Gazet: {:unexpected_value, "wat"}
   """
-  @spec spec!(t | opts) :: spec | no_return
-  def spec!(to_spec), do: Gazet.Spec.build!(__MODULE__, to_spec)
+  @spec blueprint!(t | opts) :: blueprint | no_return
+  def blueprint!(value), do: Gazet.Blueprint.build!(__MODULE__, value)
 
-  @impl Gazet.Spec
-  def __spec__(module) when is_atom(module) do
+  @impl Gazet.Blueprint
+  def __blueprint__(module) when is_atom(module) do
     if function_exported?(module, :__gazet__, 0) do
       module.__gazet__()
     else
@@ -310,8 +311,8 @@ defmodule Gazet do
     end
   end
 
-  def __spec__(opts) when is_list(opts), do: super(opts)
-  def __spec__(wat), do: {:error, {:unexpected_value, wat}}
+  def __blueprint__(opts) when is_list(opts), do: super(opts)
+  def __blueprint__(wat), do: {:error, {:unexpected_value, wat}}
 
   defmacro __using__(config) do
     quote bind_quoted: [config: config] do
@@ -335,7 +336,7 @@ defmodule Gazet do
         |> Gazet.Env.resolve()
         |> Keyword.put(:name, __MODULE__)
         |> Keyword.merge(@config)
-        |> Gazet.__spec__()
+        |> Gazet.__blueprint__()
       end
     end
   end
