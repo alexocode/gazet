@@ -87,7 +87,7 @@ defmodule Gazet do
   """
   @spec publish(t, message :: Message.data(), metadata :: Message.metadata()) ::
           :ok | {:error, reason :: any}
-  def publish(gazet, message, metadata) do
+  def publish(gazet, message, metadata \\ %{}) do
     gazet
     |> adapter()
     |> Adapter.publish(%Message{data: message, metadata: metadata})
