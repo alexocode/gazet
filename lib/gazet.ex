@@ -67,6 +67,11 @@ defmodule Gazet do
   @callback __gazet__() :: spec
 
   # TODO: Probably add something like a Config server under a supervisor
+  @doc """
+  Returns a `t:Supervisor.child_spec` for starting this `Gazet` in a supervision tree.
+
+  The specifics of the child spec depend on the gazet's `t:adapter`.
+  """
   @spec child_spec(t) :: Supervisor.child_spec()
   def child_spec(gazet) do
     gazet
@@ -74,6 +79,12 @@ defmodule Gazet do
     |> Adapter.child_spec()
   end
 
+  @doc """
+  Publishes a message with optional metadata to the given `Gazet` - or rather
+  specifically to its `topic`.
+
+  The specifics of how the message gets published depend on the gazet's `t:adapter`.
+  """
   @spec publish(t, message :: Message.data(), metadata :: Message.metadata()) ::
           :ok | {:error, reason :: any}
   def publish(gazet, message, metadata) do
@@ -82,6 +93,12 @@ defmodule Gazet do
     |> Adapter.publish(%Message{data: message, metadata: metadata})
   end
 
+  @doc """
+  Returns a `t:Supervisor.child_spec` for starting a `Gazet.Subscriber` that
+  receives events from the given `Gazet`.
+
+  The specifics of the child spec depend on the gazet's `t:adapter`.
+  """
   @spec subscriber_spec(t, subscriber :: Gazet.Subscriber.spec()) :: Supervisor.child_spec()
   def subscriber_spec(gazet, %Gazet.Subscriber{} = subscriber) do
     gazet
