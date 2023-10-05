@@ -23,7 +23,7 @@ schema =
   )
 
 defmodule Gazet.Adapter do
-  use Gazet.Spec,
+  use Gazet.Blueprint,
     schema: schema,
     typespecs_for: [:config]
 
@@ -32,49 +32,52 @@ defmodule Gazet.Adapter do
 
   @type opts :: [unquote(Gazet.Options.typespec(schema))]
 
-  @callback child_spec(spec) :: Supervisor.child_spec()
+  @callback child_spec(blueprint) :: Supervisor.child_spec()
 
-  @callback publish(spec, message :: Gazet.Message.t()) :: :ok | {:error, reason :: any}
-  @callback subscriber_child_spec(spec, subscriber :: Gazet.Subscriber.spec()) ::
+  @callback publish(blueprint, message :: Gazet.Message.t()) :: :ok | {:error, reason :: any}
+  @callback subscriber_child_spec(blueprint, subscriber :: Gazet.Subscriber.blueprint()) ::
               Supervisor.child_spec()
 
   @optional_callbacks child_spec: 1
 
-  @spec child_spec(spec) :: Supervisor.child_spec() | nil
-  def child_spec(%__MODULE__{module: module} = spec) do
+  @spec child_spec(blueprint) :: Supervisor.child_spec() | nil
+  def child_spec(%__MODULE__{module: module} = adapter) do
     if function_exported?(module, :child_spec, 1) do
-      module.child_spec(spec)
+      module.child_spec(adapter)
     else
       nil
     end
   end
 
-  @spec publish(spec, message :: Gazet.Message.t()) :: :ok | {:error, reason :: any}
-  def publish(%__MODULE__{module: module} = spec, %Gazet.Message{} = message) do
-    module.publish(spec, message)
+  @spec publish(blueprint, message :: Gazet.Message.t()) :: :ok | {:error, reason :: any}
+  def publish(%__MODULE__{module: module} = adapter, %Gazet.Message{} = message) do
+    module.publish(adapter, message)
   end
 
-  @spec subscriber_child_spec(spec, subscriber :: Gazet.Subscriber.spec()) ::
+  @spec subscriber_child_spec(blueprint, subscriber :: Gazet.Subscriber.blueprint()) ::
           Supervisor.child_spec()
-  def subscriber_child_spec(%__MODULE__{module: module} = spec, %Gazet.Subscriber{} = subscriber) do
-    module.subscriber_child_spec(spec, subscriber)
+  def subscriber_child_spec(
+        %__MODULE__{module: module} = adapter,
+        %Gazet.Subscriber{} = subscriber
+      ) do
+    module.subscriber_child_spec(adapter, subscriber)
   end
 
-  @spec spec!(t | spec, opts) :: spec | no_return
-  def spec!({adapter, config}, opts) when is_atom(adapter) do
-    raw_spec =
+  @spec blueprint!(t | blueprint, opts) :: blueprint | no_return
+  def blueprint!({module, config}, opts) when is_atom(module) do
+    raw_blueprint =
       opts
-      |> Keyword.put(:module, adapter)
+      |> Keyword.put(:module, module)
       |> Keyword.update(:config, config, &Keyword.merge(config, &1))
 
-    Gazet.Spec.build!(__MODULE__, raw_spec)
+    Gazet.Blueprint.build!(__MODULE__, raw_blueprint)
   end
 
-  def spec!(adapter, opts) when is_atom(adapter) do
-    spec!({adapter, []}, opts)
+  def blueprint!(module, opts) when is_atom(module) do
+    blueprint!({module, []}, opts)
   end
 
-  def spec!(%__MODULE__{} = spec, opts) do
-    Gazet.Spec.build!(spec, opts)
+  def blueprint!(%__MODULE__{} = adapter, opts) do
+    Gazet.Blueprint.build!(adapter, opts)
   end
 end

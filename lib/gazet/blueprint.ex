@@ -1,4 +1,4 @@
-defmodule Gazet.Spec do
+defmodule Gazet.Blueprint do
   @moduledoc false
 
   @type t :: t(module())
@@ -8,18 +8,18 @@ defmodule Gazet.Spec do
   @type ok(module) :: {:ok, t(module)}
   @type error(module) :: {:error, {:no_spec, module}} | {:error, reason :: any()}
 
-  @callback __spec__(any) :: {:ok, t()} | {:error, reason :: any()}
+  @callback __blueprint__(any) :: {:ok, t()} | {:error, reason :: any()}
 
-  defguard is_spec(value, module) when is_struct(value, module)
+  defguard is_blueprint(value, module) when is_struct(value, module)
 
   @spec build(t(module) | module, any) :: result(module) when module: module
-  def build(module_or_spec, values \\ [])
+  def build(module_or_blueprint, values \\ [])
 
-  def build(%_{} = spec, []), do: {:ok, spec}
+  def build(%_{} = blueprint, []), do: {:ok, blueprint}
 
-  def build(%module{} = spec, values) when is_list(values) do
+  def build(%module{} = blueprint, values) when is_list(values) do
     values =
-      spec
+      blueprint
       |> Map.from_struct()
       |> Map.to_list()
       |> Keyword.merge(values)
@@ -27,27 +27,28 @@ defmodule Gazet.Spec do
     build(module, values)
   end
 
-  def build(module, %module{} = spec), do: {:ok, spec}
+  def build(module, %module{} = blueprint), do: {:ok, blueprint}
 
   def build(module, values) when is_atom(module) do
-    if function_exported?(module, :__spec__, 1) do
-      module.__spec__(values)
+    if function_exported?(module, :__blueprint__, 1) do
+      module.__blueprint__(values)
     else
-      {:error, {:no_spec, module}}
+      {:error, {:no_blueprint, module}}
     end
   end
 
   @spec build!(t(module) | module, any) :: t(module) | no_return when module: module
-  def build!(module_or_spec, values) do
-    case build(module_or_spec, values) do
-      {:ok, spec} ->
-        spec
+  def build!(module_or_blueprint, values) do
+    case build(module_or_blueprint, values) do
+      {:ok, blueprint} ->
+        blueprint
 
       {:error, exception} when is_exception(exception) ->
         raise exception
 
       {:error, reason} ->
-        raise ArgumentError, "unable to construct #{name(module_or_spec)}: " <> inspect(reason)
+        raise ArgumentError,
+              "unable to construct #{name(module_or_blueprint)}: " <> inspect(reason)
     end
   end
 
@@ -59,7 +60,7 @@ defmodule Gazet.Spec do
     typespecs_for = Keyword.get(opts, :typespecs_for, [])
 
     quote location: :keep, bind_quoted: [schema: schema, typespecs_for: typespecs_for] do
-      @behaviour Gazet.Spec
+      @behaviour Gazet.Blueprint
 
       Gazet.Options.map(schema, fn field, spec ->
         if typespecs_for == :all or field in typespecs_for do
@@ -69,22 +70,22 @@ defmodule Gazet.Spec do
       end)
 
       @typedoc Gazet.Options.docs(schema)
-      @type spec :: %__MODULE__{
+      @type blueprint :: %__MODULE__{
               unquote_splicing(
                 Gazet.Options.map(schema, fn f, _ -> {f, Gazet.Options.typespec(schema, f)} end)
               )
             }
       defstruct(Gazet.Options.map(schema, &{&1, &2[:default]}))
 
-      @impl Gazet.Spec
+      @impl Gazet.Blueprint
       @schema Gazet.Options.schema!(schema)
-      def __spec__(values) do
+      def __blueprint__(values) do
         with {:ok, values} <- Gazet.Options.validate(values, @schema) do
           {:ok, struct(__MODULE__, values)}
         end
       end
 
-      defoverridable __spec__: 1
+      defoverridable __blueprint__: 1
     end
   end
 end

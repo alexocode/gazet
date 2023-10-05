@@ -32,11 +32,11 @@ defmodule Gazet.Subscriber do
   ## Configuration
   #{Gazet.Options.docs(schema)}
   """
-  use Gazet.Spec,
+  use Gazet.Blueprint,
     schema: schema,
     typespecs_for: [:config]
 
-  @type t :: implementation | spec
+  @type t :: implementation | blueprint
 
   @typedoc "A module implementing this behaviour."
   @type implementation :: module
@@ -45,7 +45,7 @@ defmodule Gazet.Subscriber do
   # TODO: Allow state modification?
   @type result :: :ok | :skip | {:error, reason :: any}
 
-  @callback init(spec) :: {:ok, config()} | {:error, reason :: any}
+  @callback init(blueprint) :: {:ok, config()} | {:error, reason :: any}
 
   # @callback handle_batch(
   #             topic :: Gazet.topic(),
@@ -72,19 +72,19 @@ defmodule Gazet.Subscriber do
               config :: config
             ) :: result
 
-  @spec spec(spec | opts) :: Gazet.Spec.result(__MODULE__)
-  def spec(values), do: Gazet.Spec.build(__MODULE__, values)
-  @spec spec!(spec | opts) :: spec | no_return
-  def spec!(values), do: Gazet.Spec.build!(__MODULE__, values)
+  @spec blueprint(blueprint | opts) :: Gazet.Blueprint.result(__MODULE__)
+  def blueprint(values), do: Gazet.Blueprint.build(__MODULE__, values)
+  @spec blueprint!(blueprint | opts) :: blueprint | no_return
+  def blueprint!(values), do: Gazet.Blueprint.build!(__MODULE__, values)
 
-  @spec child_spec(spec | opts) :: Supervisor.child_spec()
+  @spec child_spec(blueprint | opts) :: Supervisor.child_spec()
   def child_spec(%Subscriber{source: source} = subscriber) do
     Gazet.subscriber_child_spec(source, subscriber)
   end
 
   def child_spec(opts) do
     opts
-    |> spec!()
+    |> blueprint!()
     |> child_spec()
   end
 
@@ -95,15 +95,15 @@ defmodule Gazet.Subscriber do
     |> child_spec()
   end
 
-  @impl Gazet.Spec
-  def __spec__(values) do
-    with {:ok, subscriber_spec} <- super(values) do
-      if is_nil(subscriber_spec.otp_app) do
-        with {:ok, otp_app} <- Gazet.config(subscriber_spec.source, :otp_app) do
-          {:ok, %{subscriber_spec | otp_app: otp_app}}
+  @impl Gazet.Blueprint
+  def __blueprint__(values) do
+    with {:ok, subscriber} <- super(values) do
+      if is_nil(subscriber.otp_app) do
+        with {:ok, otp_app} <- Gazet.config(subscriber.source, :otp_app) do
+          {:ok, %{subscriber | otp_app: otp_app}}
         end
       else
-        {:ok, subscriber_spec}
+        {:ok, subscriber}
       end
     end
   end

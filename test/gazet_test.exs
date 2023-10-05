@@ -15,8 +15,8 @@ defmodule GazetTest do
     test "invokes the adapter's `child_spec/1` function" do
       child_spec = %{what_we: {:expected, make_ref()}}
 
-      expect(MoxAdapter, :child_spec, fn adapter_spec ->
-        assert adapter_spec == %Gazet.Adapter{
+      expect(MoxAdapter, :child_spec, fn adapter_blueprint ->
+        assert adapter_blueprint == %Gazet.Adapter{
                  module: MoxAdapter,
                  name: MyGazet.Adapter,
                  topic: @gazet.topic,
@@ -36,8 +36,8 @@ defmodule GazetTest do
       metadata = %{my: "unique", metadata: make_ref()}
       ref = make_ref()
 
-      expect(MoxAdapter, :publish, fn adapter_spec, message ->
-        assert adapter_spec == %Gazet.Adapter{
+      expect(MoxAdapter, :publish, fn adapter_blueprint, message ->
+        assert adapter_blueprint == %Gazet.Adapter{
                  module: MoxAdapter,
                  name: MyGazet.Adapter,
                  topic: @gazet.topic,
@@ -61,15 +61,15 @@ defmodule GazetTest do
       subscriber = %Gazet.Subscriber{module: SomeSubsciber, id: :my_subscriber, source: @gazet}
       ref = make_ref()
 
-      expect(MoxAdapter, :subscriber_child_spec, fn adapter_spec, subscriber_spec ->
-        assert adapter_spec == %Gazet.Adapter{
+      expect(MoxAdapter, :subscriber_child_spec, fn adapter_blueprint, subscriber_blueprint ->
+        assert adapter_blueprint == %Gazet.Adapter{
                  module: MoxAdapter,
                  name: MyGazet.Adapter,
                  topic: @gazet.topic,
                  config: elem(@gazet.adapter, 1)
                }
 
-        assert subscriber_spec == subscriber
+        assert subscriber_blueprint == subscriber
 
         %{id: ref}
       end)
