@@ -105,6 +105,20 @@ defmodule Gazet do
     |> adapter()
   end
 
+  Gazet.Options.map(schema, fn field, _spec ->
+    type = Gazet.Options.typespec(schema, field)
+
+    @spec config(t | opts, unquote(field)) :: {:ok, unquote(type)} | Gazet.Spec.error(__MODULE__)
+    def config(gazet, unquote(field)) do
+      with {:ok, %{unquote(field) => value}} <- spec(gazet) do
+        {:ok, value}
+      end
+    end
+
+    @spec config!(t | opts, unquote(field)) :: unquote(type) | no_return
+    def config!(gazet, unquote(field)), do: Map.fetch!(spec!(gazet), unquote(field))
+  end)
+
   @spec spec(t | opts) :: Gazet.Spec.result(__MODULE__)
   def spec(to_spec), do: Gazet.Spec.build(__MODULE__, to_spec)
   @spec spec!(t | opts) :: spec | no_return
