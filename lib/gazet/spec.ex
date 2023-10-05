@@ -47,9 +47,12 @@ defmodule Gazet.Spec do
         raise exception
 
       {:error, reason} ->
-        raise ArgumentError, "unable to construct spec: " <> inspect(reason)
+        raise ArgumentError, "unable to construct #{name(module_or_spec)}: " <> inspect(reason)
     end
   end
+
+  defp name(%module{}), do: name(module)
+  defp name(module) when is_atom(module), do: inspect(module)
 
   defmacro __using__(opts) do
     schema = Keyword.fetch!(opts, :schema)

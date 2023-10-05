@@ -89,6 +89,43 @@ defmodule Gazet do
     |> Adapter.subscriber_spec(subscriber)
   end
 
+  @doc """
+  Returns the `t:Gazet.Adapter.spec` for the given `Gazet`.
+
+  ## Examples
+
+      iex> gazet = %Gazet{adapter: Gazet.Adapter.Local, name: MyGazet, topic: "my_topic"}
+      iex> adapter(gazet)
+      %Gazet.Adapter{
+        module: Gazet.Adapter.Local,
+        name: MyGazet.Adapter,
+        topic: "my_topic",
+        config: []
+      }
+
+      iex> gazet = %Gazet{adapter: {Gazet.Adapter.Local, my: "config"}, name: MyGazet, topic: "my_topic"}
+      iex> adapter(gazet)
+      %Gazet.Adapter{
+        module: Gazet.Adapter.Local,
+        name: MyGazet.Adapter,
+        topic: "my_topic",
+        config: [my: "config"]
+      }
+
+      iex> defmodule MyGazet do
+      ...>   use Gazet,
+      ...>     otp_app: :my_app,
+      ...>     adapter: {Gazet.Adapter.Local, my: "config"},
+      ...>     topic: "my_topic"
+      ...> end
+      iex> adapter(MyGazet)
+      %Gazet.Adapter{
+        module: Gazet.Adapter.Local,
+        name: MyGazet.Adapter,
+        topic: "my_topic",
+        config: [my: "config"]
+      }
+  """
   @spec adapter(t) :: Adapter.spec()
   def adapter(%Gazet{adapter: %Gazet.Adapter{} = adapter}), do: adapter
 
@@ -105,6 +142,42 @@ defmodule Gazet do
     |> adapter()
   end
 
+  @doc """
+  Fetches the config value for the given key.
+
+  ## Examples
+
+      iex> gazet = %Gazet{otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyGazet, topic: "my_topic"}
+      iex> config(gazet, :otp_app)
+      {:ok, :my_app}
+      iex> config(gazet, :adapter)
+      {:ok, Gazet.Adapter.Local}
+      iex> config(gazet, :name)
+      {:ok, MyGazet}
+      iex> config(gazet, :topic)
+      {:ok, "my_topic"}
+
+      iex> defmodule ModuleGazet do
+      ...>   use Gazet,
+      ...>     otp_app: :another_app,
+      ...>     adapter: {Gazet.Adapter.Local, my: "config"},
+      ...>     topic: "the_best_topic"
+      ...> end
+      iex> config(ModuleGazet, :otp_app)
+      {:ok, :another_app}
+      iex> config(ModuleGazet, :adapter)
+      {:ok, {Gazet.Adapter.Local, my: "config"}}
+      iex> config(ModuleGazet, :name)
+      {:ok, ModuleGazet}
+      iex> config(ModuleGazet, :topic)
+      {:ok, "the_best_topic"}
+
+      iex> config(:not_a_gazet, :topic)
+      {:error, {:missing_impl, Gazet, :not_a_gazet}}
+
+      iex> config("not a gazet", :topic)
+      {:error, {:unexpected_value, "not a gazet"}}
+  """
   Gazet.Options.map(schema, fn field, _spec ->
     type = Gazet.Options.typespec(schema, field)
 
@@ -114,6 +187,46 @@ defmodule Gazet do
         {:ok, value}
       end
     end
+  end)
+
+  @doc """
+  Like `config/2` but raises any errors.
+
+  ## Examples
+
+      iex> gazet = %Gazet{otp_app: :my_app, adapter: Gazet.Adapter.Local, name: MyGazet, topic: "my_topic"}
+      iex> config!(gazet, :otp_app)
+      :my_app
+      iex> config!(gazet, :adapter)
+      Gazet.Adapter.Local
+      iex> config!(gazet, :name)
+      MyGazet
+      iex> config!(gazet, :topic)
+      "my_topic"
+
+      iex> defmodule AnotherModuleGazet do
+      ...>   use Gazet,
+      ...>     otp_app: :another_app,
+      ...>     adapter: {Gazet.Adapter.Local, my: "config"},
+      ...>     topic: "the_best_topic"
+      ...> end
+      iex> config!(AnotherModuleGazet, :otp_app)
+      :another_app
+      iex> config!(AnotherModuleGazet, :adapter)
+      {Gazet.Adapter.Local, my: "config"}
+      iex> config!(AnotherModuleGazet, :name)
+      AnotherModuleGazet
+      iex> config!(AnotherModuleGazet, :topic)
+      "the_best_topic"
+
+      iex> config!(:not_a_gazet, :topic)
+      ** (ArgumentError) unable to construct Gazet: {:missing_impl, Gazet, :not_a_gazet}
+
+      iex> config!("not a gazet", :topic)
+      ** (ArgumentError) unable to construct Gazet: {:unexpected_value, "not a gazet"}
+  """
+  Gazet.Options.map(schema, fn field, _spec ->
+    type = Gazet.Options.typespec(schema, field)
 
     @spec config!(t | opts, unquote(field)) :: unquote(type) | no_return
     def config!(gazet, unquote(field)), do: Map.fetch!(spec!(gazet), unquote(field))
@@ -125,8 +238,16 @@ defmodule Gazet do
   def spec!(to_spec), do: Gazet.Spec.build!(__MODULE__, to_spec)
 
   @impl Gazet.Spec
-  def __spec__(module) when is_atom(module), do: module.__gazet__()
-  def __spec__(opts), do: super(opts)
+  def __spec__(module) when is_atom(module) do
+    if function_exported?(module, :__gazet__, 0) do
+      module.__gazet__()
+    else
+      {:error, {:missing_impl, Gazet, module}}
+    end
+  end
+
+  def __spec__(opts) when is_list(opts), do: super(opts)
+  def __spec__(wat), do: {:error, {:unexpected_value, wat}}
 
   defmacro __using__(config) do
     quote bind_quoted: [config: config] do
