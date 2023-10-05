@@ -99,11 +99,11 @@ defmodule Gazet do
 
   The specifics of the child spec depend on the gazet's `t:adapter`.
   """
-  @spec subscriber_spec(t, subscriber :: Gazet.Subscriber.spec()) :: Supervisor.child_spec()
-  def subscriber_spec(gazet, %Gazet.Subscriber{} = subscriber) do
+  @spec subscriber_child_spec(t, subscriber :: Gazet.Subscriber.spec()) :: Supervisor.child_spec()
+  def subscriber_child_spec(gazet, %Gazet.Subscriber{} = subscriber) do
     gazet
     |> adapter()
-    |> Adapter.subscriber_spec(subscriber)
+    |> Adapter.subscriber_child_spec(subscriber)
   end
 
   @doc """

@@ -56,12 +56,12 @@ defmodule GazetTest do
     end
   end
 
-  describe "subscriber_spec/2" do
-    test "invokes the adapter's `subscriber_spec/2` function" do
+  describe "subscriber_child_spec/2" do
+    test "invokes the adapter's `subscriber_child_spec/2` function" do
       subscriber = %Gazet.Subscriber{module: SomeSubsciber, id: :my_subscriber, source: @gazet}
       ref = make_ref()
 
-      expect(MoxAdapter, :subscriber_spec, fn adapter_spec, subscriber_spec ->
+      expect(MoxAdapter, :subscriber_child_spec, fn adapter_spec, subscriber_spec ->
         assert adapter_spec == %Gazet.Adapter{
                  module: MoxAdapter,
                  name: MyGazet.Adapter,
@@ -74,7 +74,7 @@ defmodule GazetTest do
         %{id: ref}
       end)
 
-      assert Gazet.subscriber_spec(@gazet, subscriber) == %{id: ref}
+      assert Gazet.subscriber_child_spec(@gazet, subscriber) == %{id: ref}
     end
   end
 end

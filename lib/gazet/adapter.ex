@@ -35,7 +35,7 @@ defmodule Gazet.Adapter do
   @callback child_spec(spec) :: Supervisor.child_spec()
 
   @callback publish(spec, message :: Gazet.Message.t()) :: :ok | {:error, reason :: any}
-  @callback subscriber_spec(spec, subscriber :: Gazet.Subscriber.spec()) ::
+  @callback subscriber_child_spec(spec, subscriber :: Gazet.Subscriber.spec()) ::
               Supervisor.child_spec()
 
   @optional_callbacks child_spec: 1
@@ -54,9 +54,10 @@ defmodule Gazet.Adapter do
     module.publish(spec, message)
   end
 
-  @spec subscriber_spec(spec, subscriber :: Gazet.Subscriber.spec()) :: Supervisor.child_spec()
-  def subscriber_spec(%__MODULE__{module: module} = spec, %Gazet.Subscriber{} = subscriber) do
-    module.subscriber_spec(spec, subscriber)
+  @spec subscriber_child_spec(spec, subscriber :: Gazet.Subscriber.spec()) ::
+          Supervisor.child_spec()
+  def subscriber_child_spec(%__MODULE__{module: module} = spec, %Gazet.Subscriber{} = subscriber) do
+    module.subscriber_child_spec(spec, subscriber)
   end
 
   @spec spec!(t | spec, opts) :: spec | no_return
