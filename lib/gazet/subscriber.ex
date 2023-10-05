@@ -26,6 +26,7 @@ schema =
   )
 
 defmodule Gazet.Subscriber do
+  alias Gazet.Subscriber
   # TODO: Write docs
   @moduledoc """
   ## Configuration
@@ -76,11 +77,15 @@ defmodule Gazet.Subscriber do
   @spec spec!(spec | opts) :: spec | no_return
   def spec!(values), do: Gazet.Spec.build!(__MODULE__, values)
 
-  @spec child_spec(opts) :: Supervisor.child_spec()
-  def child_spec(opts) do
-    spec = spec!(opts)
+  @spec child_spec(spec | opts) :: Supervisor.child_spec()
+  def child_spec(%Subscriber{source: source} = subscriber) do
+    Gazet.subscriber_spec(source, subscriber)
+  end
 
-    Gazet.subscriber_spec(spec.source, spec)
+  def child_spec(opts) do
+    opts
+    |> spec!()
+    |> child_spec()
   end
 
   @spec child_spec(implementation, opts) :: Supervisor.child_spec()
@@ -92,9 +97,14 @@ defmodule Gazet.Subscriber do
 
   @impl Gazet.Spec
   def __spec__(values) do
-    with {:ok, subscriber_spec} <- super(values),
-         {:ok, gazet_spec} <- Gazet.spec(subscriber_spec.source) do
-      {:ok, %{subscriber_spec | otp_app: subscriber_spec.otp_app || gazet_spec.otp_app}}
+    with {:ok, subscriber_spec} <- super(values) do
+      if is_nil(subscriber_spec.otp_app) do
+        with {:ok, otp_app} <- Gazet.config(subscriber_spec.source, :otp_app) do
+          {:ok, %{subscriber_spec | otp_app: otp_app}}
+        end
+      else
+        {:ok, subscriber_spec}
+      end
     end
   end
 
@@ -104,14 +114,19 @@ defmodule Gazet.Subscriber do
 
       @opts opts
             |> Keyword.put_new(:id, __MODULE__)
-            |> Keyword.put_new_lazy(:otp_app, fn -> Gazet.spec!(opts[:source]).otp_app end)
+            |> Keyword.put_new_lazy(:otp_app, fn -> Gazet.config!(opts[:source], :otp_app) end)
 
       def child_spec(extra_config) do
         otp_app = extra_config[:otp_app] || @opts[:otp_app]
 
         opts =
-          @opts
-          |> Keyword.merge(Application.get_env(otp_app, __MODULE__, []))
+          [
+            {:gazet, Gazet.Subscriber},
+            {otp_app, Gazet.Subscriber},
+            {otp_app, __MODULE__}
+          ]
+          |> Gazet.Env.resolve()
+          |> Keyword.merge(@opts)
           |> Keyword.merge(extra_config)
 
         Gazet.Subscriber.child_spec(__MODULE__, opts)
