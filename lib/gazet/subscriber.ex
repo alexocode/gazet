@@ -16,7 +16,7 @@ schema =
       type: :keyword_list,
       default: [],
       doc:
-        "A keyword list specific to the source's adapter and `c:Gazet.Adapter.subscriber_spec/2`. Check the adapter docs for details."
+        "A keyword list specific to the source's adapter and `c:Gazet.Adapter.subscriber_child_spec/2`. Check the adapter docs for details."
     ],
     config: [
       type: :keyword_list,
@@ -79,7 +79,7 @@ defmodule Gazet.Subscriber do
 
   @spec child_spec(spec | opts) :: Supervisor.child_spec()
   def child_spec(%Subscriber{source: source} = subscriber) do
-    Gazet.subscriber_spec(source, subscriber)
+    Gazet.subscriber_child_spec(source, subscriber)
   end
 
   def child_spec(opts) do

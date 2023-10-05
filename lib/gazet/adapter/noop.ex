@@ -5,7 +5,7 @@ defmodule Gazet.Adapter.Noop do
   def publish(_adapter, _message), do: :ok
 
   @impl true
-  def subscriber_spec(_adapter, %Gazet.Subscriber{id: id}) do
+  def subscriber_child_spec(_adapter, %Gazet.Subscriber{id: id}) do
     %{
       id: id,
       start: {__MODULE__, :start_nothing, []}
