@@ -19,6 +19,7 @@ erl_crash.dump
 .eunit
 *.o
 *.plt
+*.plt.hash
 .concrete/DEV_MODE
 
 # rebar 2.x
