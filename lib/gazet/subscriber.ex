@@ -21,7 +21,8 @@ schema =
     init_args: [
       type: :any,
       required: false,
-      doc: "Whatever should be passed to the `init/1` callback of the subscriber."
+      doc:
+        "Passed to the `init/2` callback of the subscriber. Acts as the default value for `t:context`."
     ]
   )
 
@@ -43,12 +44,12 @@ defmodule Gazet.Subscriber do
   @type opts :: [unquote(Gazet.Options.typespec(schema))]
 
   @type init_args :: term
-  @typedoc "Returned by `init/2` and passed as last argument to all other callbacks."
-  @type config :: term
+  @typedoc "Used-defined data structure as returned by `init/2`. Passed as last argument to all other callbacks."
+  @type context :: term
 
-  @type result :: :ok | {:ok, config} | {:error, reason :: any}
+  @type result :: :ok | {:ok, context} | {:error, reason :: any}
 
-  @callback init(blueprint, init_args) :: {:ok, config} | {:error, reason :: any}
+  @callback init(blueprint, init_args) :: {:ok, context} | {:error, reason :: any}
 
   # @callback handle_batch(
   #             topic :: Gazet.topic(),
@@ -57,14 +58,14 @@ defmodule Gazet.Subscriber do
   #                 Gazet.Message.data(),
   #                 Gazet.Message.metadata()
   #               }),
-  #             config :: config
+  #             context :: context
   #           ) :: result
 
   @callback handle_message(
               topic :: Gazet.topic(),
               message :: Gazet.Message.data(),
               metadata :: Gazet.Message.metadata(),
-              config :: config
+              context :: context
             ) :: result
 
   @callback handle_error(
@@ -72,7 +73,7 @@ defmodule Gazet.Subscriber do
               topic :: Gazet.topic(),
               message :: Gazet.Message.data(),
               metadata :: Gazet.Message.metadata(),
-              config :: config
+              context :: context
             ) :: result
 
   @spec blueprint(blueprint | opts) :: Gazet.Blueprint.result(__MODULE__)
