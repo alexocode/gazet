@@ -25,8 +25,8 @@ defmodule Gazet.Subscriber.Generic do
 
   @type opts :: [unquote(Gazet.Options.typespec(schema))]
   @type on_start ::
-          (Subscriber.blueprint(), Subscriber.config() ->
-             :ok | {:ok, Subscriber.config()} | {:error, reason :: any})
+          (Subscriber.blueprint(), Subscriber.context() ->
+             :ok | {:ok, Subscriber.context()} | {:error, reason :: any})
 
   for key <- schema_keys do
     @spec with_opt(
@@ -99,10 +99,10 @@ defmodule Gazet.Subscriber.Generic do
   end
 
   def init(%Subscriber{module: module} = subscriber) do
-    with {:ok, config} <- module.init(subscriber, subscriber.init_args) do
+    with {:ok, context} <- module.init(subscriber, subscriber.init_args) do
       {
         :ok,
-        {subscriber, config},
+        {subscriber, context},
         {:continue, {:on_start, opt(subscriber, :on_start)}}
       }
     end
@@ -112,45 +112,45 @@ defmodule Gazet.Subscriber.Generic do
     {:noreply, state}
   end
 
-  def handle_continue({:on_start, on_start}, {%Subscriber{} = subscriber, config}) do
+  def handle_continue({:on_start, on_start}, {%Subscriber{} = subscriber, context}) do
     on_start
     |> case do
       function when is_function(function, 2) ->
-        function.(subscriber, config)
+        function.(subscriber, context)
 
       {module, function, extra_args} ->
-        apply(module, function, [subscriber, config | extra_args])
+        apply(module, function, [subscriber, context | extra_args])
     end
     |> case do
-      :ok -> {:noreply, {subscriber, config}}
-      {:ok, config} -> {:noreply, {subscriber, config}}
+      :ok -> {:noreply, {subscriber, context}}
+      {:ok, context} -> {:noreply, {subscriber, context}}
       {:error, reason} -> {:stop, reason}
     end
   end
 
   def handle_info(
         {:message, topic, %Gazet.Message{} = message},
-        {%Subscriber{module: module} = subscriber, config}
+        {%Subscriber{module: module} = subscriber, context}
       ) do
-    case module.handle_message(topic, message.data, message.metadata, config) do
+    case module.handle_message(topic, message.data, message.metadata, context) do
       :ok ->
-        {:noreply, {subscriber, config}}
+        {:noreply, {subscriber, context}}
 
-      {:ok, config} ->
-        {:noreply, {subscriber, config}}
+      {:ok, context} ->
+        {:noreply, {subscriber, context}}
 
       {:error, reason} ->
-        handle_error(reason, topic, message, subscriber, config)
+        handle_error(reason, topic, message, subscriber, context)
     end
   end
 
-  defp handle_error(reason, topic, message, %{module: module} = subscriber, config) do
-    case module.handle_error(reason, topic, message.data, message.metadata, config) do
+  defp handle_error(reason, topic, message, %{module: module} = subscriber, context) do
+    case module.handle_error(reason, topic, message.data, message.metadata, context) do
       :ok ->
-        {:noreply, {subscriber, config}}
+        {:noreply, {subscriber, context}}
 
-      {:ok, config} ->
-        {:noreply, {subscriber, config}}
+      {:ok, context} ->
+        {:noreply, {subscriber, context}}
 
       {:error, reason} ->
         {:stop, reason}
