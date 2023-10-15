@@ -27,9 +27,10 @@ schema =
   )
 
 defmodule Gazet.Subscriber do
-  alias Gazet.Subscriber
   # TODO: Write docs
   @moduledoc """
+  Stateless subscriber.
+
   ## Configuration
   #{Gazet.Options.docs(schema)}
   """
@@ -47,7 +48,7 @@ defmodule Gazet.Subscriber do
   @typedoc "Used-defined data structure as returned by `init/2`. Passed as last argument to all other callbacks."
   @type context :: term
 
-  @type result :: :ok | {:ok, context} | {:error, reason :: any}
+  @type result :: :ok | {:error, reason :: any}
 
   @callback init(blueprint, init_args) :: {:ok, context} | {:error, reason :: any}
 
