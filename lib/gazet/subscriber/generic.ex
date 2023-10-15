@@ -123,7 +123,6 @@ defmodule Gazet.Subscriber.Generic do
     end
     |> case do
       :ok -> {:noreply, {subscriber, context}}
-      {:ok, context} -> {:noreply, {subscriber, context}}
       {:error, reason} -> {:stop, reason}
     end
   end
@@ -136,9 +135,6 @@ defmodule Gazet.Subscriber.Generic do
       :ok ->
         {:noreply, {subscriber, context}}
 
-      {:ok, context} ->
-        {:noreply, {subscriber, context}}
-
       {:error, reason} ->
         handle_error(reason, topic, message, subscriber, context)
     end
@@ -147,9 +143,6 @@ defmodule Gazet.Subscriber.Generic do
   defp handle_error(reason, topic, message, %{module: module} = subscriber, context) do
     case module.handle_error(reason, topic, message.data, message.metadata, context) do
       :ok ->
-        {:noreply, {subscriber, context}}
-
-      {:ok, context} ->
         {:noreply, {subscriber, context}}
 
       {:error, reason} ->
