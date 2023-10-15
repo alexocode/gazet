@@ -18,10 +18,10 @@ schema =
       doc:
         "A keyword list specific to the source's adapter and `c:Gazet.Adapter.subscriber_child_spec/2`. Check the adapter docs for details."
     ],
-    config: [
-      type: :keyword_list,
+    init_args: [
+      type: :any,
       required: false,
-      doc: "Subscriber specific configuration. Passed as last argument to all callbacks."
+      doc: "Whatever should be passed to the `init/1` callback of the subscriber."
     ]
   )
 
@@ -33,8 +33,7 @@ defmodule Gazet.Subscriber do
   #{Gazet.Options.docs(schema)}
   """
   use Gazet.Blueprint,
-    schema: schema,
-    typespecs_for: [:config]
+    schema: schema
 
   @type t :: implementation | blueprint
 
@@ -42,10 +41,14 @@ defmodule Gazet.Subscriber do
   @type implementation :: module
 
   @type opts :: [unquote(Gazet.Options.typespec(schema))]
-  # TODO: Allow state modification?
-  @type result :: :ok | :skip | {:error, reason :: any}
 
-  @callback init(blueprint) :: {:ok, config()} | {:error, reason :: any}
+  @type init_args :: term
+  @typedoc "Returned by `init/2` and passed as last argument to all other callbacks."
+  @type config :: term
+
+  @type result :: :ok | {:ok, config} | {:error, reason :: any}
+
+  @callback init(blueprint, init_args) :: {:ok, config} | {:error, reason :: any}
 
   # @callback handle_batch(
   #             topic :: Gazet.topic(),
@@ -133,14 +136,14 @@ defmodule Gazet.Subscriber do
       end
 
       @impl Gazet.Subscriber
-      def init(%Gazet.Subscriber{config: config}), do: {:ok, config}
+      def init(%Gazet.Subscriber{}, init_args), do: {:ok, init_args}
 
       @impl Gazet.Subscriber
       def handle_error(reason, _topic, _message, _metadata, _config) do
         {:error, reason}
       end
 
-      defoverridable init: 1, handle_error: 5
+      defoverridable init: 2, handle_error: 5
     end
   end
 end

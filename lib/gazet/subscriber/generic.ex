@@ -3,7 +3,7 @@ schema =
     child_spec: [type: :keyword_list, default: [], doc: "Overrides for `child_spec/1`"],
     start_opts: [type: :keyword_list, default: [], doc: "Options for `GenServer.start_link/3`"],
     on_start: [
-      type: {:or, [:mfa, {:fun, 0}, {:fun, 1}]},
+      type: {:or, [:mfa, {:fun, 2}]},
       required: false,
       doc:
         "Function to be invoked on start, needs to conform to `t:on_start`. When this returns an error the `GenServer` `stop`s with the error reason."
@@ -25,7 +25,8 @@ defmodule Gazet.Subscriber.Generic do
 
   @type opts :: [unquote(Gazet.Options.typespec(schema))]
   @type on_start ::
-          (Subscriber.blueprint() -> :ok | {:ok, Subscriber.spec()} | {:error, reason :: any})
+          (Subscriber.blueprint(), Subscriber.config() ->
+             :ok | {:ok, Subscriber.config()} | {:error, reason :: any})
 
   for key <- schema_keys do
     @spec with_opt(
@@ -98,55 +99,58 @@ defmodule Gazet.Subscriber.Generic do
   end
 
   def init(%Subscriber{module: module} = subscriber) do
-    with {:ok, config} <- module.init(subscriber) do
+    with {:ok, config} <- module.init(subscriber, subscriber.init_args) do
       {
         :ok,
-        %{subscriber | config: config},
+        {subscriber, config},
         {:continue, {:on_start, opt(subscriber, :on_start)}}
       }
     end
   end
 
-  def handle_continue({:on_start, nil}, %Subscriber{} = subscriber) do
-    {:noreply, subscriber}
+  def handle_continue({:on_start, nil}, state) do
+    {:noreply, state}
   end
 
-  def handle_continue({:on_start, on_start}, %Subscriber{} = subscriber) do
+  def handle_continue({:on_start, on_start}, {%Subscriber{} = subscriber, config}) do
     on_start
     |> case do
-      function when is_function(function, 0) ->
-        function.()
+      function when is_function(function, 2) ->
+        function.(subscriber, config)
 
-      function when is_function(function, 1) ->
-        function.(subscriber)
-
-      {module, function, args} ->
-        apply(module, function, [subscriber | args])
+      {module, function, extra_args} ->
+        apply(module, function, [subscriber, config | extra_args])
     end
     |> case do
-      :ok -> {:noreply, subscriber}
-      {:ok, %Subscriber{} = subscriber} -> {:noreply, subscriber}
+      :ok -> {:noreply, {subscriber, config}}
+      {:ok, config} -> {:noreply, {subscriber, config}}
       {:error, reason} -> {:stop, reason}
     end
   end
 
   def handle_info(
         {:message, topic, %Gazet.Message{} = message},
-        %Subscriber{module: module} = subscriber
+        {%Subscriber{module: module} = subscriber, config}
       ) do
-    case module.handle_message(topic, message.data, message.metadata, subscriber.config) do
-      fine when fine in [:ok, :skip] ->
-        {:noreply, subscriber}
+    case module.handle_message(topic, message.data, message.metadata, config) do
+      :ok ->
+        {:noreply, {subscriber, config}}
+
+      {:ok, config} ->
+        {:noreply, {subscriber, config}}
 
       {:error, reason} ->
-        handle_error(reason, topic, message, subscriber)
+        handle_error(reason, topic, message, subscriber, config)
     end
   end
 
-  defp handle_error(reason, topic, message, %{module: module} = subscriber) do
-    case module.handle_error(reason, topic, message.data, message.metadata, subscriber.config) do
-      fine when fine in [:ok, :skip] ->
-        {:noreply, subscriber}
+  defp handle_error(reason, topic, message, %{module: module} = subscriber, config) do
+    case module.handle_error(reason, topic, message.data, message.metadata, config) do
+      :ok ->
+        {:noreply, {subscriber, config}}
+
+      {:ok, config} ->
+        {:noreply, {subscriber, config}}
 
       {:error, reason} ->
         {:stop, reason}
