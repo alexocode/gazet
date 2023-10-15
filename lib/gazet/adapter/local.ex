@@ -23,7 +23,7 @@ defmodule Gazet.Adapter.Local do
   @impl true
   def subscriber_child_spec(%{name: name, topic: topic}, %Subscriber{} = subscriber) do
     Subscriber.Generic.child_spec(subscriber,
-      on_start: fn ->
+      on_start: fn _subscriber, _config ->
         with {:ok, _} <- Registry.register(name, topic, :ignored) do
           :ok
         end
