@@ -25,11 +25,14 @@ defmodule Gazet.Subscriber.Generic do
 
   @type opts :: [unquote(Gazet.Options.typespec(schema))]
   @type on_start ::
-          (Subscriber.spec() -> :ok | {:ok, Subscriber.spec()} | {:error, reason :: any})
+          (Subscriber.blueprint() -> :ok | {:ok, Subscriber.spec()} | {:error, reason :: any})
 
   for key <- schema_keys do
-    @spec with_opt(Subscriber.spec(), unquote(key), unquote(Gazet.Options.typespec(schema, key))) ::
-            Subscriber.spec()
+    @spec with_opt(
+            Subscriber.blueprint(),
+            unquote(key),
+            unquote(Gazet.Options.typespec(schema, key))
+          ) :: Subscriber.blueprint()
   end
 
   def with_opt(%Subscriber{} = subscriber, key, value) when key in unquote(schema_keys) do
@@ -39,14 +42,14 @@ defmodule Gazet.Subscriber.Generic do
     end)
   end
 
-  @spec with_opts(Subscriber.spec(), opts) :: Subscriber.spec()
+  @spec with_opts(Subscriber.blueprint(), opts) :: Subscriber.blueprint()
   def with_opts(%Subscriber{} = subscriber, server_opts) do
     Enum.reduce(server_opts, subscriber, fn {key, value}, subscriber ->
       with_opt(subscriber, key, value)
     end)
   end
 
-  @spec child_spec(Subscriber.spec(), server_opts :: opts) :: Supervisor.child_spec()
+  @spec child_spec(Subscriber.blueprint(), server_opts :: opts) :: Supervisor.child_spec()
   def child_spec(%Subscriber{} = subscriber, server_opts \\ []) do
     {:ok, subscriber} =
       subscriber
@@ -62,7 +65,7 @@ defmodule Gazet.Subscriber.Generic do
     )
   end
 
-  @spec start_link(Subscriber.spec(), server_opts :: opts) ::
+  @spec start_link(Subscriber.blueprint(), server_opts :: opts) ::
           GenServer.on_start() | Gazet.Options.error()
   def start_link(%Subscriber{} = subscriber, server_opts \\ []) do
     subscriber = with_opts(subscriber, server_opts)
