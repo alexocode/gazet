@@ -87,41 +87,40 @@ defmodule Gazet.Subscriber do
   end
 
   @impl Gazet.Blueprint
-  def __blueprint__(values) do
-    with {:ok, subscriber} <- super(values) do
-      if is_nil(subscriber.otp_app) do
-        with {:ok, otp_app} <- Gazet.config(subscriber.source, :otp_app) do
-          {:ok, %{subscriber | otp_app: otp_app}}
-        end
-      else
-        {:ok, subscriber}
-      end
+  def __blueprint__(opts) do
+    # Ensure that the given values always at least include the required options
+    with {:ok, blueprint} <- super(opts) do
+      otp_app = blueprint.otp_app || Gazet.config!(blueprint.source, :otp_app)
+
+      [
+        {:gazet, Gazet.Subscriber},
+        {otp_app, Gazet.Subscriber}
+      ]
+      |> Gazet.Env.resolve()
+      |> Keyword.merge(opts)
+      |> Keyword.put(:otp_app, otp_app)
+      |> super()
     end
   end
 
-  defmacro __using__(opts) do
-    quote bind_quoted: [opts: opts] do
+  defmacro __using__(config) do
+    quote bind_quoted: [config: config] do
       @behaviour Gazet.Subscriber
-      @behaviour Gazet.Subscriber.Using
-
-      @opts opts
-            |> Keyword.put_new(:id, __MODULE__)
-            |> Keyword.put_new_lazy(:otp_app, fn -> Gazet.config!(opts[:source], :otp_app) end)
 
       def child_spec(extra_config) do
-        otp_app = extra_config[:otp_app] || @opts[:otp_app]
+        Gazet.Subscriber.child_spec(
+          __MODULE__,
+          Keyword.merge(config(), extra_config)
+        )
+      end
 
-        opts =
-          [
-            {:gazet, Gazet.Subscriber},
-            {otp_app, Gazet.Subscriber},
-            {otp_app, __MODULE__}
-          ]
-          |> Gazet.Env.resolve()
-          |> Keyword.merge(@opts)
-          |> Keyword.merge(extra_config)
+      @config Keyword.put(config, :module, __MODULE__)
+      def config do
+        blueprint = Gazet.Subscriber.blueprint!(@config)
 
-        Gazet.Subscriber.child_spec(__MODULE__, opts)
+        blueprint
+        |> Map.from_struct()
+        |> Gazet.Env.merge(blueprint.otp_app, __MODULE__)
       end
 
       @impl Gazet.Subscriber
@@ -143,7 +142,7 @@ defmodule Gazet.Subscriber do
         {:error, reason}
       end
 
-      defoverridable init: 2, handle_batch: 3, handle_error: 5
+      defoverridable child_spec: 1, config: 0, init: 2, handle_batch: 3, handle_error: 5
     end
   end
 end
