@@ -1,0 +1,7 @@
+Batching:
+  ☐ Refactor Subscriber.Generic
+  ☐ Refactor Adapter.Local
+
+QA:
+  ☐ Add tests for basically everything
+  ☐ Add missing docs
