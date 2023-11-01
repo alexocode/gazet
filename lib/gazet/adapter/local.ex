@@ -1,33 +1,35 @@
 defmodule Gazet.Adapter.Local do
   alias Gazet.Message
+  alias Gazet.Adapter
   alias Gazet.Subscriber
 
   @behaviour Gazet.Adapter
 
   @impl true
-  def child_spec(%{name: name}) do
+  def child_spec(%Adapter{name: name}) do
     Registry.child_spec(
-      keys: :duplicate,
+      keys: :unique,
       name: name,
       partitions: System.schedulers_online()
     )
   end
 
   @impl true
-  def publish(%{name: name, topic: topic}, %Message{} = message) do
-    Registry.dispatch(name, topic, fn entries ->
-      for {pid, _} <- entries, do: send(pid, {:message, topic, message})
-    end)
+  @registered_pids_spec [{{:_, :"$1", :_}, [], [:"$1"]}]
+  def publish(%Adapter{name: name, topic: topic}, %Message{} = message) do
+    name
+    |> Registry.select(@registered_pids_spec)
+    |> Enum.each(&send(&1, {:message, topic, message}))
   end
 
   @impl true
-  def subscriber_child_spec(%{name: name, topic: topic}, %Subscriber{} = subscriber) do
+  def subscriber_child_spec(%Adapter{} = adapter, %Subscriber{} = subscriber) do
     Subscriber.Generic.child_spec(subscriber,
-      on_start: fn _subscriber, _config ->
-        with {:ok, _} <- Registry.register(name, topic, :ignored) do
-          :ok
-        end
-      end
+      start_opts: [name: subscriber_name(adapter, subscriber)]
     )
+  end
+
+  defp subscriber_name(%Adapter{name: adapter_name}, %Subscriber{id: subscriber_id}) do
+    {:via, Registry, {adapter_name, subscriber_id}}
   end
 end
