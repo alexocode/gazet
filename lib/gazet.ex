@@ -64,7 +64,7 @@ defmodule Gazet do
   @type name :: atom
   @type topic :: atom | binary
 
-  @callback __gazet__() :: blueprint
+  @callback config() :: blueprint | opts
 
   # TODO: Probably add something like a Config server under a supervisor
   @doc """
@@ -304,40 +304,48 @@ defmodule Gazet do
   def blueprint!(value), do: Gazet.Blueprint.build!(__MODULE__, value)
 
   @impl Gazet.Blueprint
+  def __blueprint__(%__MODULE__{} = blueprint), do: {:ok, blueprint}
+
   def __blueprint__(module) when is_atom(module) do
-    if function_exported?(module, :__gazet__, 0) do
-      module.__gazet__()
+    if function_exported?(module, :config, 0) do
+      __blueprint__(module.config())
     else
       {:error, {:missing_impl, Gazet, module}}
     end
   end
 
-  def __blueprint__(opts) when is_list(opts), do: super(opts)
+  def __blueprint__(opts) when is_list(opts) do
+    otp_app = Keyword.fetch!(opts, :otp_app)
+
+    [
+      {:gazet, Gazet},
+      {otp_app, Gazet}
+    ]
+    |> Gazet.Env.resolve([:adapter])
+    |> Keyword.merge(opts)
+    |> super()
+  end
+
   def __blueprint__(wat), do: {:error, {:unexpected_value, wat}}
 
   defmacro __using__(config) do
     quote bind_quoted: [config: config] do
       @behaviour Gazet
 
-      @config config
-      @otp_app Keyword.fetch!(config, :otp_app)
-
       # TODO: Print a warning when passing additional information
       def child_spec([]) do
         Gazet.child_spec(__MODULE__)
       end
 
+      @config Keyword.put_new(config, :name, config)
+      @otp_app Keyword.fetch!(config, :otp_app)
       @impl Gazet
-      def __gazet__ do
-        [
-          {:gazet, Gazet},
-          {@otp_app, Gazet},
-          {@otp_app, __MODULE__}
-        ]
-        |> Gazet.Env.resolve()
-        |> Keyword.put(:name, __MODULE__)
+      def config do
+        env_config = Gazet.Env.resolve(@otp_app, __MODULE__, [:adapter])
+
+        env_config
         |> Keyword.merge(@config)
-        |> Gazet.__blueprint__()
+        |> Gazet.blueprint!()
       end
     end
   end

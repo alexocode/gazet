@@ -87,8 +87,8 @@ defmodule Gazet.Subscriber do
   end
 
   @impl Gazet.Blueprint
-  def __blueprint__(opts) do
-    # Ensure that the given values always at least include the required options
+  def __blueprint__(opts) when is_list(opts) do
+    # Ensure that the given opts always include the required options
     with {:ok, blueprint} <- super(opts) do
       otp_app = blueprint.otp_app || Gazet.config!(blueprint.source, :otp_app)
 
@@ -96,7 +96,7 @@ defmodule Gazet.Subscriber do
         {:gazet, Gazet.Subscriber},
         {otp_app, Gazet.Subscriber}
       ]
-      |> Gazet.Env.resolve()
+      |> Gazet.Env.resolve([:adapter_opts])
       |> Keyword.merge(opts)
       |> Keyword.put(:otp_app, otp_app)
       |> super()
@@ -115,12 +115,13 @@ defmodule Gazet.Subscriber do
       end
 
       @config Keyword.put(config, :module, __MODULE__)
+      @otp_app Gazet.Subscriber.blueprint!(@config).otp_app
       def config do
-        blueprint = Gazet.Subscriber.blueprint!(@config)
+        env_config = Gazet.Env.resolve(@otp_app, __MODULE__, [:adapter_opts])
 
-        blueprint
-        |> Map.from_struct()
-        |> Gazet.Env.merge(blueprint.otp_app, __MODULE__)
+        env_config
+        |> Keyword.merge(@config)
+        |> Gazet.Subscriber.blueprint!()
       end
 
       @impl Gazet.Subscriber
