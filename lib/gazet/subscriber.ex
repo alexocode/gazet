@@ -63,18 +63,18 @@ defmodule Gazet.Subscriber do
               context :: context
             ) :: result
 
-  @spec blueprint(blueprint | opts) :: Gazet.Blueprint.result(__MODULE__)
-  def blueprint(values), do: Gazet.Blueprint.build(__MODULE__, values)
-  @spec blueprint!(blueprint | opts) :: blueprint | no_return
-  def blueprint!(values), do: Gazet.Blueprint.build!(__MODULE__, values)
+  @spec blueprint(t | opts) :: Gazet.Blueprint.result(__MODULE__)
+  def blueprint(module_or_opts), do: Gazet.Blueprint.build(__MODULE__, module_or_opts)
+  @spec blueprint!(t | opts) :: blueprint | no_return
+  def blueprint!(module_or_opts), do: Gazet.Blueprint.build!(__MODULE__, module_or_opts)
 
-  @spec child_spec(blueprint | opts) :: Supervisor.child_spec()
+  @spec child_spec(t | opts) :: Supervisor.child_spec()
   def child_spec(%__MODULE__{source: source} = subscriber) do
     Gazet.subscriber_child_spec(source, subscriber)
   end
 
-  def child_spec(opts) do
-    opts
+  def child_spec(module_or_opts) do
+    module_or_opts
     |> blueprint!()
     |> child_spec()
   end
