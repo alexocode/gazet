@@ -12,7 +12,7 @@ defmodule Gazet.Blueprint do
 
   defguard is_blueprint(value, module) when is_struct(value, module)
 
-  @spec build(t(module) | module, any) :: result(module) when module: module
+  @spec build(t(mod) | mod, any) :: result(mod) when mod: module
   def build(module_or_blueprint, values \\ [])
 
   def build(%_{} = blueprint, []), do: {:ok, blueprint}
@@ -37,7 +37,7 @@ defmodule Gazet.Blueprint do
     end
   end
 
-  @spec build!(t(module) | module, any) :: t(module) | no_return when module: module
+  @spec build!(t(mod) | mod, any) :: t(mod) | no_return when mod: module
   def build!(module_or_blueprint, values) do
     case build(module_or_blueprint, values) do
       {:ok, blueprint} ->
