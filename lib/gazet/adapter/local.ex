@@ -24,9 +24,7 @@ defmodule Gazet.Adapter.Local do
 
   @impl true
   def subscriber_child_spec(%Adapter{} = adapter, %Subscriber{} = subscriber) do
-    Subscriber.Generic.child_spec(subscriber,
-      start_opts: [name: subscriber_name(adapter, subscriber)]
-    )
+    Subscriber.Generic.child_spec(subscriber, name: subscriber_name(adapter, subscriber))
   end
 
   defp subscriber_name(%Adapter{name: adapter_name}, %Subscriber{id: subscriber_id}) do
