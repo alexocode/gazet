@@ -50,6 +50,8 @@ defmodule Gazet.Subscriber do
 
   @type result :: :ok | {:error, reason :: any}
 
+  @callback config() :: blueprint | opts
+
   @callback init(blueprint :: blueprint, init_args :: init_args) ::
               {:ok, context} | {:error, reason :: any}
 
@@ -80,18 +82,35 @@ defmodule Gazet.Subscriber do
   end
 
   @spec child_spec(implementation, opts) :: Supervisor.child_spec()
-  def child_spec(module, opts) when is_atom(module) do
-    opts
-    |> Keyword.put(:module, module)
+  def child_spec(module, overrides) when is_atom(module) do
+    base_opts =
+      case module.config() do
+        %__MODULE__{} = blueprint ->
+          blueprint
+          |> Map.from_struct()
+          |> Map.to_list()
+
+        opts ->
+          opts
+      end
+
+    base_opts
+    |> Keyword.merge(Keyword.take(overrides, [:id, :otp_app, :source, :adapter_opts, :init_args]))
     |> child_spec()
   end
 
   @impl Gazet.Blueprint
-  def __blueprint__(%__MODULE__{} = blueprint), do: {:ok, blueprint}
-
   def __blueprint__(module) when is_atom(module) do
     if function_exported?(module, :config, 0) do
-      __blueprint__(module.config())
+      case module.config() do
+        %__MODULE__{} = blueprint ->
+          {:ok, blueprint}
+
+        opts ->
+          opts
+          |> Keyword.put(:module, module)
+          |> __blueprint__()
+      end
     else
       {:error, {:no_config_function, module}}
     end
@@ -117,15 +136,13 @@ defmodule Gazet.Subscriber do
     quote bind_quoted: [config: config] do
       @behaviour Gazet.Subscriber
 
-      def child_spec(extra_config) do
-        Gazet.Subscriber.child_spec(
-          __MODULE__,
-          Keyword.merge(config(), extra_config)
-        )
+      def child_spec(overrides) do
+        Gazet.Subscriber.child_spec(__MODULE__, overrides)
       end
 
       @config Keyword.put(config, :module, __MODULE__)
       @otp_app Gazet.Subscriber.blueprint!(@config).otp_app
+      @impl Gazet.Subscriber
       def config do
         env_config = Gazet.Env.resolve(@otp_app, __MODULE__, [:adapter_opts])
 
