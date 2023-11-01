@@ -50,30 +50,16 @@ defmodule Gazet.Subscriber do
 
   @type result :: :ok | {:error, reason :: any}
 
-  @callback init(blueprint, init_args) :: {:ok, context} | {:error, reason :: any}
+  @callback init(blueprint :: blueprint, init_args :: init_args) ::
+              {:ok, context} | {:error, reason :: any}
 
-  # @callback handle_batch(
-  #             topic :: Gazet.topic(),
-  #             batch ::
-  #               nonempty_list({
-  #                 Gazet.Message.data(),
-  #                 Gazet.Message.metadata()
-  #               }),
-  #             context :: context
-  #           ) :: result
-
-  @callback handle_message(
+  @callback handle_batch(
               topic :: Gazet.topic(),
-              message :: Gazet.Message.data(),
-              metadata :: Gazet.Message.metadata(),
-              context :: context
-            ) :: result
-
-  @callback handle_error(
-              error_reason :: any,
-              topic :: Gazet.topic(),
-              message :: Gazet.Message.data(),
-              metadata :: Gazet.Message.metadata(),
+              batch ::
+                nonempty_list({
+                  Gazet.Message.data(),
+                  Gazet.Message.metadata()
+                }),
               context :: context
             ) :: result
 
@@ -116,6 +102,7 @@ defmodule Gazet.Subscriber do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       @behaviour Gazet.Subscriber
+      @behaviour Gazet.Subscriber.Using
 
       @opts opts
             |> Keyword.put_new(:id, __MODULE__)
@@ -141,11 +128,22 @@ defmodule Gazet.Subscriber do
       def init(%Gazet.Subscriber{}, init_args), do: {:ok, init_args}
 
       @impl Gazet.Subscriber
+      def handle_batch(topic, batch, context) do
+        Enum.reduce_while(batch, :ok, fn {message, metadata}, _ ->
+          with {:error, reason} <- handle_message(topic, message, metadata, context),
+               {:error, reason} <- handle_error(reason, topic, message, metadata, context) do
+            {:halt, {:error, reason}}
+          else
+            :ok -> {:cont, :ok}
+          end
+        end)
+      end
+
       def handle_error(reason, _topic, _message, _metadata, _config) do
         {:error, reason}
       end
 
-      defoverridable init: 2, handle_error: 5
+      defoverridable init: 2, handle_batch: 3, handle_error: 5
     end
   end
 end
