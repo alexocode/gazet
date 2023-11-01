@@ -191,7 +191,7 @@ defmodule Gazet do
       {:ok, "the_best_topic"}
 
       iex> config(:not_a_gazet, :topic)
-      {:error, {:missing_impl, Gazet, :not_a_gazet}}
+      {:error, {:no_config_function, :not_a_gazet}}
 
       iex> config("not a gazet", :topic)
       {:error, {:unexpected_value, "not a gazet"}}
@@ -239,7 +239,7 @@ defmodule Gazet do
       "the_best_topic"
 
       iex> config!(:not_a_gazet, :topic)
-      ** (ArgumentError) unable to construct Gazet: {:missing_impl, Gazet, :not_a_gazet}
+      ** (ArgumentError) unable to construct Gazet: {:no_config_function, :not_a_gazet}
 
       iex> config!("not a gazet", :topic)
       ** (ArgumentError) unable to construct Gazet: {:unexpected_value, "not a gazet"}
@@ -269,7 +269,7 @@ defmodule Gazet do
       {:ok, %Gazet{otp_app: :my_cool_app, adapter: {Gazet.Adapter.Local, my: "config"}, name: MyCoolModuleGazet, topic: "the_best_topic"}}
 
       iex> blueprint(:wat)
-      {:error, {:missing_impl, Gazet, :wat}}
+      {:error, {:no_config_function, :wat}}
 
       iex> blueprint("wat")
       {:error, {:unexpected_value, "wat"}}
@@ -295,7 +295,7 @@ defmodule Gazet do
       %Gazet{otp_app: :my_cool_app, adapter: {Gazet.Adapter.Local, my: "config"}, name: MyCoolModuleGazet2, topic: "the_best_topic"}
 
       iex> blueprint!(:wat)
-      ** (ArgumentError) unable to construct Gazet: {:missing_impl, Gazet, :wat}
+      ** (ArgumentError) unable to construct Gazet: {:no_config_function, :wat}
 
       iex> blueprint!("wat")
       ** (ArgumentError) unable to construct Gazet: {:unexpected_value, "wat"}
@@ -310,7 +310,7 @@ defmodule Gazet do
     if function_exported?(module, :config, 0) do
       __blueprint__(module.config())
     else
-      {:error, {:missing_impl, Gazet, module}}
+      {:error, {:no_config_function, module}}
     end
   end
 
