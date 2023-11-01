@@ -83,7 +83,7 @@ defmodule Gazet.Subscriber do
   def blueprint!(values), do: Gazet.Blueprint.build!(__MODULE__, values)
 
   @spec child_spec(blueprint | opts) :: Supervisor.child_spec()
-  def child_spec(%Subscriber{source: source} = subscriber) do
+  def child_spec(%__MODULE__{source: source} = subscriber) do
     Gazet.subscriber_child_spec(source, subscriber)
   end
 
