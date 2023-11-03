@@ -9,9 +9,7 @@ defmodule Gazet.Options.Fallback do
   def schema!(schema), do: schema
 
   @impl true
-  def map(schema, mapper) do
-    Enum.map(schema, fn {field, spec} -> mapper.(field, spec) end)
-  end
+  def raw(schema), do: schema
 
   @impl true
   def docs(schema) do
