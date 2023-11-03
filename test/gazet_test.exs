@@ -9,7 +9,12 @@ defmodule GazetTest do
 
   setup :verify_on_exit!
 
-  @gazet %Gazet{adapter: {MoxAdapter, some: "config"}, topic: :my_topic, name: MyGazet}
+  @gazet %Gazet{
+    otp_app: :gazet,
+    adapter: {MoxAdapter, some: "config"},
+    topic: :my_topic,
+    name: MyGazet
+  }
 
   describe "child_spec/1" do
     test "invokes the adapter's `child_spec/1` function" do

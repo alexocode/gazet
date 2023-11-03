@@ -112,7 +112,7 @@ defmodule Gazet do
 
   ## Examples
 
-      iex> gazet = %Gazet{adapter: Gazet.Adapter.Local, name: MyGazet, topic: "my_topic"}
+      iex> gazet = %Gazet{otp_app: :gazet, adapter: Gazet.Adapter.Local, name: MyGazet, topic: "my_topic"}
       iex> adapter(gazet)
       %Gazet.Adapter{
         module: Gazet.Adapter.Local,
@@ -121,7 +121,7 @@ defmodule Gazet do
         config: []
       }
 
-      iex> gazet = %Gazet{adapter: {Gazet.Adapter.Local, my: "config"}, name: MyGazet, topic: "my_topic"}
+      iex> gazet = %Gazet{otp_app: :gazet, adapter: {Gazet.Adapter.Local, my: "config"}, name: MyGazet, topic: "my_topic"}
       iex> adapter(gazet)
       %Gazet.Adapter{
         module: Gazet.Adapter.Local,
@@ -337,11 +337,11 @@ defmodule Gazet do
         Gazet.child_spec(__MODULE__)
       end
 
-      @config Keyword.put_new(config, :name, config)
+      @config Keyword.put_new(config, :name, __MODULE__)
       @otp_app Keyword.fetch!(config, :otp_app)
       @impl Gazet
       def config do
-        env_config = Gazet.Env.resolve(@otp_app, __MODULE__, [:adapter])
+        env_config = Gazet.Env.resolve({@otp_app, __MODULE__}, [:adapter])
 
         env_config
         |> Keyword.merge(@config)
