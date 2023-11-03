@@ -75,7 +75,13 @@ defmodule Gazet.Blueprint do
                 Gazet.Options.map(schema, fn f, _ -> {f, Gazet.Options.typespec(schema, f)} end)
               )
             }
-      @enforce_keys for {key, true} <- Gazet.Options.map(schema, &{&1, &2[:required]}), do: key
+      @enforce_keys Gazet.Options.reduce(schema, [], fn key, spec, list ->
+                      if spec[:required] do
+                        [key | list]
+                      else
+                        list
+                      end
+                    end)
       defstruct(Gazet.Options.map(schema, &{&1, &2[:default]}))
 
       @impl Gazet.Blueprint
