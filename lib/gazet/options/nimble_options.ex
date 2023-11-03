@@ -9,13 +9,8 @@ if Code.ensure_loaded?(NimbleOptions) do
     defdelegate schema!(schema), to: NimbleOptions, as: :new!
 
     @impl true
-    def map(%NimbleOptions{schema: schema}, mapper) do
-      map(schema, mapper)
-    end
-
-    def map(schema, mapper) when is_list(schema) and is_function(mapper, 2) do
-      Enum.map(schema, fn {field, spec} -> mapper.(field, spec) end)
-    end
+    def raw(%NimbleOptions{schema: schema}), do: schema
+    def raw(schema), do: schema
 
     @impl true
     defdelegate docs(schema), to: NimbleOptions
