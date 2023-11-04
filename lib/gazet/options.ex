@@ -25,6 +25,7 @@ defmodule Gazet.Options do
             when config: keyword
   @callback validate!(config, schema) :: config | no_return when config: keyword
 
+  # coveralls-ignore-next-line
   defdelegate schema!(keyword), to: @implementation
 
   @doc """
@@ -39,10 +40,15 @@ defmodule Gazet.Options do
   """
   defdelegate raw(schema), to: @implementation
 
+  # coveralls-ignore-next-line
   defdelegate docs(schema), to: @implementation
+  # coveralls-ignore-next-line
   defdelegate typespec(schema), to: @implementation
+  # coveralls-ignore-next-line
   defdelegate typespec(schema, field), to: @implementation
+  # coveralls-ignore-next-line
   defdelegate validate(config, schema), to: @implementation
+  # coveralls-ignore-next-line
   defdelegate validate!(config, schema), to: @implementation
 
   @doc """

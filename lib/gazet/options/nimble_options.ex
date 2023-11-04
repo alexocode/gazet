@@ -41,9 +41,11 @@ if Code.ensure_loaded?(NimbleOptions) do
     def raw(schema), do: schema
 
     @impl true
+    # coveralls-ignore-next-line
     defdelegate docs(schema), to: NimbleOptions
 
     @impl true
+    # coveralls-ignore-next-line
     defdelegate typespec(schema), to: NimbleOptions, as: :option_typespec
 
     @doc """
@@ -73,9 +75,11 @@ if Code.ensure_loaded?(NimbleOptions) do
     end
 
     @impl true
+    # coveralls-ignore-next-line
     defdelegate validate(config, schema), to: NimbleOptions
 
     @impl true
+    # coveralls-ignore-next-line
     defdelegate validate!(config, schema), to: NimbleOptions
   end
 end
