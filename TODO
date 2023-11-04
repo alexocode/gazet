@@ -1,6 +1,6 @@
 Batching:
-  ☐ Refactor Subscriber.Generic
-  ☐ Refactor Adapter.Local
+  ☐ Refactor Subscriber.Generic to handle batching
+  ☐ Refactor Adapter.Local to send batched messages
 
 QA:
   ☐ Add tests for basically everything
