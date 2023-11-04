@@ -50,11 +50,11 @@ defmodule Gazet.Options do
 
   ## Examples
 
-      iex> schema = schema!(some_field: [type: :string, required: true], another_field: [type: :integer])
+      iex> schema = schema!(some_field: [type: :string, required: true], another_field: [type: :integer, required: false])
       iex> reduce(schema, %{}, fn key, spec, map -> Map.put(map, key, spec) end)
       %{
         some_field: [type: :string, required: true],
-        another_field: [type: :integer]
+        another_field: [type: :integer, required: false]
       }
   """
   @spec reduce(schema, acc, reducer :: (field :: atom, spec :: keyword, acc -> acc)) :: acc
@@ -70,11 +70,11 @@ defmodule Gazet.Options do
 
   ## Example
 
-      iex> schema = schema!(some_field: [type: :string, required: true], another_field: [type: :integer])
+      iex> schema = schema!(some_field: [type: :string, required: true], another_field: [type: :integer, required: false])
       iex> map(schema, fn key, spec -> %{key: key, spec: spec} end)
       [
         %{key: :some_field, spec: [type: :string, required: true]},
-        %{key: :another_field, spec: [type: :integer]},
+        %{key: :another_field, spec: [type: :integer, required: false]},
       ]
   """
   @spec map(schema, mapper :: (field :: atom, spec :: keyword -> mapped)) :: list(mapped)
