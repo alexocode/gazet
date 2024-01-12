@@ -12,11 +12,10 @@ schema =
       doc: "Unique ID for this subscriber, defaults to the using module"
     ],
     source: [type: {:or, [:atom, {:struct, Gazet}]}, required: true],
-    adapter_opts: [
+    start_opts: [
       type: :keyword_list,
       default: [],
-      doc:
-        "A keyword list specific to the source's adapter and `c:Gazet.Adapter.subscriber_child_spec/2`. Check the adapter docs for details."
+      doc: "A keyword list consumed by the `source`'s Adapter when starting this Subscriber. Refer to the Adapter's docs for details on which options are supported/expected."
     ],
     init_args: [
       type: :any,
@@ -95,7 +94,7 @@ defmodule Gazet.Subscriber do
       end
 
     base_opts
-    |> Keyword.merge(Keyword.take(overrides, [:id, :otp_app, :source, :adapter_opts, :init_args]))
+    |> Keyword.merge(Keyword.take(overrides, [:id, :otp_app, :source, :start_opts, :init_args]))
     |> child_spec()
   end
 
@@ -125,7 +124,7 @@ defmodule Gazet.Subscriber do
         {:gazet, Gazet.Subscriber},
         {otp_app, Gazet.Subscriber}
       ]
-      |> Gazet.Env.resolve([:adapter_opts])
+      |> Gazet.Env.resolve([:start_opts])
       |> Keyword.merge(opts)
       |> Keyword.put(:otp_app, otp_app)
       |> super()
@@ -144,7 +143,7 @@ defmodule Gazet.Subscriber do
       @otp_app Gazet.Subscriber.blueprint!(@config).otp_app
       @impl Gazet.Subscriber
       def config do
-        env_config = Gazet.Env.resolve(@otp_app, __MODULE__, [:adapter_opts])
+        env_config = Gazet.Env.resolve(@otp_app, __MODULE__, [:start_opts])
 
         env_config
         |> Keyword.merge(@config)
