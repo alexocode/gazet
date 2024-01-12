@@ -90,7 +90,7 @@ defmodule Gazet.Subscriber do
           |> Map.from_struct()
           |> Map.to_list()
 
-        opts ->
+        opts when is_list(opts) ->
           opts
       end
 
@@ -104,9 +104,9 @@ defmodule Gazet.Subscriber do
     if function_exported?(module, :config, 0) do
       case module.config() do
         %__MODULE__{} = blueprint ->
-          {:ok, blueprint}
+          {:ok, %__MODULE__{blueprint | module: module}}
 
-        opts ->
+        opts when is_list(opts) ->
           opts
           |> Keyword.put(:module, module)
           |> __blueprint__()
