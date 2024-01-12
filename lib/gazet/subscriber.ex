@@ -139,13 +139,7 @@ defmodule Gazet.Subscriber do
       @config Keyword.put(config, :module, __MODULE__)
       @otp_app Gazet.Subscriber.blueprint!(@config).otp_app
       @impl Gazet.Subscriber
-      def config do
-        env_config = Gazet.Env.resolve(@otp_app, __MODULE__, [:start_opts])
-
-        env_config
-        |> Keyword.merge(@config)
-        |> Gazet.Subscriber.blueprint!()
-      end
+      def config, do: Gazet.Subscriber.blueprint!(@config)
 
       @impl Gazet.Subscriber
       def init(%Gazet.Subscriber{subscriber_opts: context}), do: {:ok, context}
