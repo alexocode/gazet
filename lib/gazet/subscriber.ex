@@ -17,11 +17,10 @@ schema =
       default: [],
       doc: "A keyword list consumed by the `source`'s Adapter when starting this Subscriber. Refer to the Adapter's docs for details on which options are supported/expected."
     ],
-    init_args: [
+    subscriber_opts: [
       type: :any,
       required: false,
-      doc:
-        "Passed to the `init/2` callback of the subscriber. Acts as the default value for `t:context`."
+      doc: "Use this to pass whatever - the default `init/1` implementation returns this as `t:context`."
     ]
   )
 
@@ -43,7 +42,6 @@ defmodule Gazet.Subscriber do
 
   @type opts :: [unquote(Gazet.Options.typespec(schema))]
 
-  @type init_args :: term
   @typedoc "Used-defined data structure as returned by `init/2`. Passed as last argument to all other callbacks."
   @type context :: term
 
@@ -51,8 +49,7 @@ defmodule Gazet.Subscriber do
 
   @callback config() :: blueprint | opts
 
-  @callback init(blueprint :: blueprint, init_args :: init_args) ::
-              {:ok, context} | {:error, reason :: any}
+  @callback init(blueprint :: blueprint) :: {:ok, context} | {:error, reason :: any}
 
   @callback handle_batch(
               topic :: Gazet.topic(),
@@ -94,7 +91,7 @@ defmodule Gazet.Subscriber do
       end
 
     base_opts
-    |> Keyword.merge(Keyword.take(overrides, [:id, :otp_app, :source, :start_opts, :init_args]))
+    |> Keyword.merge(Keyword.take(overrides, [:id, :otp_app, :source, :start_opts, :subscriber_opts]))
     |> child_spec()
   end
 
@@ -151,7 +148,7 @@ defmodule Gazet.Subscriber do
       end
 
       @impl Gazet.Subscriber
-      def init(%Gazet.Subscriber{}, init_args), do: {:ok, init_args}
+      def init(%Gazet.Subscriber{subscriber_opts: context}), do: {:ok, context}
 
       @impl Gazet.Subscriber
       def handle_batch(topic, batch, context) do

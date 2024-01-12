@@ -25,7 +25,7 @@ defmodule Gazet.Subscriber.Generic do
   end
 
   def init(%Subscriber{module: module} = subscriber) do
-    with {:ok, context} <- module.init(subscriber, subscriber.init_args) do
+    with {:ok, context} <- module.init(subscriber) do
       {:ok, {subscriber, context}}
     end
   end
