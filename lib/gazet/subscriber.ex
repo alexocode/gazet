@@ -146,6 +146,7 @@ defmodule Gazet.Subscriber do
 
       @impl Gazet.Subscriber
       def handle_batch(topic, batch, context) do
+        # TODO: Refactor this to rely on a `Subscriber.Simple` behaviour
         Enum.reduce_while(batch, :ok, fn {message, metadata}, _ ->
           with {:error, reason} <- handle_message(topic, message, metadata, context),
                {:error, reason} <- handle_error(reason, topic, message, metadata, context) do

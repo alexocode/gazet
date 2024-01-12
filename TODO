@@ -1,4 +1,5 @@
 Batching:
+  ☐ Introduce a Subscriber.Simple behaviour that is used by the generated default implementation
   ☐ Refactor Subscriber.Generic to handle batching
   ☐ Refactor Adapter.Local to send batched messages
 
