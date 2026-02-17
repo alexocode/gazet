@@ -97,7 +97,7 @@ defmodule Gazet.Subscriber do
 
   @impl Blueprint
   def __blueprint__(module) when is_atom(module) do
-    if function_exported?(module, :config, 0) do
+    if Code.ensure_loaded?(module) and function_exported?(module, :config, 0) do
       case module.config() do
         %__MODULE__{} = blueprint ->
           {:ok, %__MODULE__{blueprint | module: module}}

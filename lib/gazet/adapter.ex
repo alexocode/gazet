@@ -42,7 +42,7 @@ defmodule Gazet.Adapter do
 
   @spec child_spec(blueprint) :: Supervisor.child_spec() | nil
   def child_spec(%__MODULE__{module: module} = adapter) do
-    if function_exported?(module, :child_spec, 1) do
+    if Code.ensure_loaded?(module) and function_exported?(module, :child_spec, 1) do
       module.child_spec(adapter)
     else
       nil

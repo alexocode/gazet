@@ -307,7 +307,7 @@ defmodule Gazet do
   def __blueprint__(%__MODULE__{} = blueprint), do: {:ok, blueprint}
 
   def __blueprint__(module) when is_atom(module) do
-    if function_exported?(module, :config, 0) do
+    if Code.ensure_loaded?(module) and function_exported?(module, :config, 0) do
       __blueprint__(module.config())
     else
       {:error, {:no_config_function, module}}
