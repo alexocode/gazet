@@ -1,5 +1,5 @@
 schema =
-  Gazet.Options.schema!(
+  Blueprint.Options.schema!(
     module: [
       type: :atom,
       required: true,
@@ -30,9 +30,9 @@ defmodule Gazet.Subscriber do
   Stateless subscriber.
 
   ## Configuration
-  #{Gazet.Options.docs(schema)}
+  #{Blueprint.Options.docs(schema)}
   """
-  use Gazet.Blueprint,
+  use Blueprint,
     schema: schema
 
   @type t :: implementation | blueprint
@@ -40,7 +40,7 @@ defmodule Gazet.Subscriber do
   @typedoc "A module implementing this behaviour."
   @type implementation :: module
 
-  @type opts :: [unquote(Gazet.Options.typespec(schema))]
+  @type opts :: [unquote(Blueprint.Options.typespec(schema))]
 
   @typedoc "Used-defined data structure as returned by `init/2`. Passed as last argument to all other callbacks."
   @type context :: term
@@ -61,10 +61,10 @@ defmodule Gazet.Subscriber do
               context :: context
             ) :: result
 
-  @spec blueprint(t | opts) :: Gazet.Blueprint.result(__MODULE__)
-  def blueprint(module_or_opts), do: Gazet.Blueprint.build(__MODULE__, module_or_opts)
+  @spec blueprint(t | opts) :: Blueprint.result(__MODULE__)
+  def blueprint(module_or_opts), do: Blueprint.build(__MODULE__, module_or_opts)
   @spec blueprint!(t | opts) :: blueprint | no_return
-  def blueprint!(module_or_opts), do: Gazet.Blueprint.build!(__MODULE__, module_or_opts)
+  def blueprint!(module_or_opts), do: Blueprint.build!(__MODULE__, module_or_opts)
 
   @spec child_spec(t | opts) :: Supervisor.child_spec()
   def child_spec(%__MODULE__{source: source} = subscriber) do
@@ -95,7 +95,7 @@ defmodule Gazet.Subscriber do
     |> child_spec()
   end
 
-  @impl Gazet.Blueprint
+  @impl Blueprint
   def __blueprint__(module) when is_atom(module) do
     if function_exported?(module, :config, 0) do
       case module.config() do

@@ -1,5 +1,5 @@
 schema =
-  Gazet.Options.schema!(
+  Blueprint.Options.schema!(
     otp_app: [
       type: :atom,
       required: true
@@ -45,9 +45,9 @@ defmodule Gazet do
   end
 
   ## Configuration
-  #{Gazet.Options.docs(schema)}
+  #{Blueprint.Options.docs(schema)}
   """
-  use Gazet.Blueprint, schema: schema
+  use Blueprint, schema: schema
 
   alias Gazet.Adapter
   alias Gazet.Message
@@ -58,7 +58,7 @@ defmodule Gazet do
   @typedoc "A module implementing this behaviour."
   @type implementation :: module
 
-  @type opts :: [unquote(Gazet.Options.typespec(schema))]
+  @type opts :: [unquote(Blueprint.Options.typespec(schema))]
 
   @type adapter :: Adapter.t() | Adapter.blueprint()
   @type name :: atom
@@ -196,11 +196,11 @@ defmodule Gazet do
       iex> config("not a gazet", :topic)
       {:error, {:unexpected_value, "not a gazet"}}
   """
-  Gazet.Options.map(schema, fn field, _spec ->
-    type = Gazet.Options.typespec(schema, field)
+  Blueprint.Options.map(schema, fn field, _spec ->
+    type = Blueprint.Options.typespec(schema, field)
 
     @spec config(t | opts, unquote(field)) ::
-            {:ok, unquote(type)} | Gazet.Blueprint.error(__MODULE__)
+            {:ok, unquote(type)} | Blueprint.error(__MODULE__)
     def config(gazet, unquote(field)) do
       with {:ok, %{unquote(field) => value}} <- blueprint(gazet) do
         {:ok, value}
@@ -244,8 +244,8 @@ defmodule Gazet do
       iex> config!("not a gazet", :topic)
       ** (ArgumentError) unable to construct Gazet: {:unexpected_value, "not a gazet"}
   """
-  Gazet.Options.map(schema, fn field, _spec ->
-    type = Gazet.Options.typespec(schema, field)
+  Blueprint.Options.map(schema, fn field, _spec ->
+    type = Blueprint.Options.typespec(schema, field)
 
     @spec config!(t | opts, unquote(field)) :: unquote(type) | no_return
     def config!(gazet, unquote(field)), do: Map.fetch!(blueprint!(gazet), unquote(field))
@@ -274,8 +274,8 @@ defmodule Gazet do
       iex> blueprint("wat")
       {:error, {:unexpected_value, "wat"}}
   """
-  @spec blueprint(t | opts) :: Gazet.Blueprint.result(__MODULE__)
-  def blueprint(value), do: Gazet.Blueprint.build(__MODULE__, value)
+  @spec blueprint(t | opts) :: Blueprint.result(__MODULE__)
+  def blueprint(value), do: Blueprint.build(__MODULE__, value)
 
   @doc """
   Like `blueprint/1` but raises any errors.
@@ -301,9 +301,9 @@ defmodule Gazet do
       ** (ArgumentError) unable to construct Gazet: {:unexpected_value, "wat"}
   """
   @spec blueprint!(t | opts) :: blueprint | no_return
-  def blueprint!(value), do: Gazet.Blueprint.build!(__MODULE__, value)
+  def blueprint!(value), do: Blueprint.build!(__MODULE__, value)
 
-  @impl Gazet.Blueprint
+  @impl Blueprint
   def __blueprint__(%__MODULE__{} = blueprint), do: {:ok, blueprint}
 
   def __blueprint__(module) when is_atom(module) do

@@ -1,5 +1,5 @@
 schema =
-  Gazet.Options.schema!(
+  Blueprint.Options.schema!(
     module: [
       type: :atom,
       required: true,
@@ -23,14 +23,14 @@ schema =
   )
 
 defmodule Gazet.Adapter do
-  use Gazet.Blueprint,
+  use Blueprint,
     schema: schema,
     typespecs_for: [:config]
 
   @typedoc "A module implementing this behaviour with optional additional config."
   @type t :: module | {module, config}
 
-  @type opts :: [unquote(Gazet.Options.typespec(schema))]
+  @type opts :: [unquote(Blueprint.Options.typespec(schema))]
 
   @callback child_spec(blueprint) :: Supervisor.child_spec()
 
@@ -70,7 +70,7 @@ defmodule Gazet.Adapter do
       |> Keyword.put(:module, module)
       |> Keyword.update(:config, config, &Keyword.merge(config, &1))
 
-    Gazet.Blueprint.build!(__MODULE__, raw_blueprint)
+    Blueprint.build!(__MODULE__, raw_blueprint)
   end
 
   def blueprint!(module, opts) when is_atom(module) do
@@ -78,6 +78,6 @@ defmodule Gazet.Adapter do
   end
 
   def blueprint!(%__MODULE__{} = adapter, opts) do
-    Gazet.Blueprint.build!(adapter, opts)
+    Blueprint.build!(adapter, opts)
   end
 end
