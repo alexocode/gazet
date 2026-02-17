@@ -161,7 +161,7 @@ defmodule Gazet.Subscriber do
         {:error, reason}
       end
 
-      defoverridable child_spec: 1, config: 0, init: 2, handle_batch: 3, handle_error: 5
+      defoverridable child_spec: 1, config: 0, init: 1, handle_batch: 3, handle_error: 5
     end
   end
 end

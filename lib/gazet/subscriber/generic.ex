@@ -8,7 +8,7 @@ defmodule Gazet.Subscriber.Generic do
   def child_spec(%Subscriber{} = subscriber, start_opts \\ []) do
     %{
       id: subscriber.id,
-      start: {__MODULE__, :start_link, [start_opts]},
+      start: {__MODULE__, :start_link, [subscriber, start_opts]},
       type: :worker,
       modules: [__MODULE__, subscriber.module]
     }
@@ -34,22 +34,13 @@ defmodule Gazet.Subscriber.Generic do
         {:message, topic, %Gazet.Message{} = message},
         {%Subscriber{module: module} = subscriber, context}
       ) do
-    case module.handle_message(topic, message.data, message.metadata, context) do
+    case module.handle_batch(topic, [{message.data, message.metadata}], context) do
       :ok ->
         {:noreply, {subscriber, context}}
 
       {:error, reason} ->
-        handle_error(reason, topic, message, subscriber, context)
+        {:stop, reason, {subscriber, context}}
     end
   end
 
-  defp handle_error(reason, topic, message, %{module: module} = subscriber, context) do
-    case module.handle_error(reason, topic, message.data, message.metadata, context) do
-      :ok ->
-        {:noreply, {subscriber, context}}
-
-      {:error, reason} ->
-        {:stop, reason}
-    end
-  end
 end
